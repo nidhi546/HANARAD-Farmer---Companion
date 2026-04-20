@@ -1,0 +1,147 @@
+// Plant disease database for Gujarat crops.
+// In production, replace mock detection with a real ML API call.
+
+export const DISEASES = [
+  {
+    id: 'cotton_lcv',
+    crop: 'cotton',
+    name: 'Cotton Leaf Curl Virus',
+    nameGu: 'કપાસ પર્ણ કૂંચિ',
+    nameHi: 'कपास पत्ती मरोड़ रोग',
+    severity: 'high',
+    symptoms: 'Leaves curl upward, thicken, and turn yellow. Stunted growth, no boll formation.',
+    symptomsGu: 'પાન ઉપર વળે, જાડા થઈ, પીળા પડે. છોડ ટૂંકો રહે, ઢૂળ ન ફૂટે.',
+    symptomsHi: 'पत्तियां ऊपर की ओर मुड़ जाती हैं, मोटी होकर पीली पड़ती हैं। बढ़वार रुक जाती है।',
+    treatments: [
+      'Remove and burn infected plants immediately.',
+      'Spray Imidacloprid 17.8% SL @ 0.25 ml/litre to control whitefly vector.',
+      'Apply Acetamiprid 20% SP @ 0.2 g/litre as second spray.',
+      'Use yellow sticky traps to monitor whitefly population.',
+      'Avoid growing susceptible varieties in heavily infected areas.',
+    ],
+    treatmentsGu: [
+      'ચેપગ્રસ્ત છોડ તુરત ઉખેડીને બાળો.',
+      'સફેદ માખ કાબૂ માટે ઇમિડાક્લોપ્રિડ 17.8% SL @ 0.25 ml/L છાંટો.',
+      'એસિટામિપ્રિડ 20% SP @ 0.2 g/L બીજો છંટકાવ.',
+      'પીળા ચીકણા ટ્રેપ લગાવો.',
+      'ઓછી અસરગ્રસ્ત જગ્યામાં ટ્રાન્સફર કરો.',
+    ],
+    medicines: ['Confidor (Imidacloprid)', 'Tatamida (Acetamiprid)', 'Actara (Thiamethoxam)', 'Oshin (Dinotefuran)'],
+    prevention: 'Use virus-resistant variety like Bt-cotton. Early sowing reduces risk.',
+  },
+  {
+    id: 'cotton_bollworm',
+    crop: 'cotton',
+    name: 'Pink Bollworm',
+    nameGu: 'ગુલાબી ઇયળ',
+    nameHi: 'गुलाबी सुंडी',
+    severity: 'high',
+    symptoms: 'Entry holes in bolls, pink-coloured larvae inside, boll shedding, lint damage.',
+    symptomsGu: 'ઢૂળમાં ગોળ કાણું, અંદર ગુલાબી ઇયળ, ઢૂળ ખરવા, રૂ નુકસાન.',
+    symptomsHi: 'टिंडों में गोल छेद, अंदर गुलाबी लट, टिंडे झड़ना, रूई को नुकसान।',
+    treatments: [
+      'Install pheromone traps @ 5 per acre to monitor adult moths.',
+      'Spray Chlorantraniliprole 18.5% SC @ 0.3 ml/litre at peak flowering.',
+      'Apply Spinosad 45% SC @ 0.3 ml/litre as alternate spray.',
+      'Deep ploughing after harvest to expose pupae to birds.',
+      'Avoid ratoon cotton — it increases bollworm population.',
+    ],
+    treatmentsGu: [
+      'ફેરોમોન ટ્રેપ 5 per acre લગાવો.',
+      'ફૂલ આવ્યે ક્લોરેન્ટ્રેનિલિપ્રોલ 18.5% SC @ 0.3 ml/L.',
+      'ફેરફેર માટે સ્પિનોઝેડ 45% SC @ 0.3 ml/L.',
+      'ઉઘડ્યા પછી ઊંડી ખેડ.',
+      'ફસલ ઉઘડ્યા પછી પ્રથ ન રાખો.',
+    ],
+    medicines: ['Coragen (Chlorantraniliprole)', 'Tracer (Spinosad)', 'Emamectin Benzoate', 'Flubendiamide'],
+    prevention: 'Use Bt-cotton hybrids, crop rotation, and destroy crop residue after harvest.',
+  },
+  {
+    id: 'groundnut_tikka',
+    crop: 'groundnut',
+    name: 'Tikka Leaf Spot',
+    nameGu: 'ટીક્કા (પર્ણ ટપ્પા)',
+    nameHi: 'टिक्का रोग (पत्ती धब्बा)',
+    severity: 'medium',
+    symptoms: 'Circular brown-black spots with yellow halo on leaves. Severe defoliation reduces yield.',
+    symptomsGu: 'પાન પર ગોળ ભૂરા-કાળા ટપ્પા, પીળો ઘેરો. ભારે ખરવાથી ઉત્પાદન ઘટે.',
+    symptomsHi: 'पत्तियों पर गोल भूरे-काले धब्बे, पीला घेरा। अधिक पत्ती झड़ने से उत्पादन घटता है।',
+    treatments: [
+      'Spray Chlorothalonil 75% WP @ 2 g/litre at first sign of disease.',
+      'Apply Mancozeb 75% WP @ 2.5 g/litre as second spray after 15 days.',
+      'Use Tebuconazole 25.9% EC @ 1 ml/litre for severe infection.',
+      'Maintain field sanitation — remove infected leaves.',
+      'Avoid overhead irrigation to reduce leaf wetness.',
+    ],
+    treatmentsGu: [
+      'ક્લોરોથાલોનિલ 75% WP @ 2 g/L રોગ દેખાય ત્યારે.',
+      '15 દિવસ પછી મૅન્કોઝેબ 75% WP @ 2.5 g/L.',
+      'ભારે ચેપ: ટેબ્યુકોન્ઝોલ 25.9% EC @ 1 ml/L.',
+      'ચેપી પાન સાફ કરો.',
+      'ઉપરથી સિંચાઈ ટાળો.',
+    ],
+    medicines: ['Kavach (Chlorothalonil)', 'Dithane M-45 (Mancozeb)', 'Folicur (Tebuconazole)', 'Hexaconazole'],
+    prevention: 'Use resistant varieties, crop rotation with cereals, treat seeds with Trichoderma.',
+  },
+  {
+    id: 'wheat_rust',
+    crop: 'wheat',
+    name: 'Yellow Rust (Stripe Rust)',
+    nameGu: 'ઘઉ ભૂરા ચીમળ (ગ્રીષ્ઠ)',
+    nameHi: 'गेहूं का पीला रस्ट',
+    severity: 'high',
+    symptoms: 'Yellow-orange stripe-like pustules on leaves arranged in rows. Severe can destroy crop.',
+    symptomsGu: 'પાન પર પીળા-નારંગી ઊભી હારો. ભારે ચેપ ઉત્પાદન ખ.',
+    symptomsHi: 'पत्तियों पर पीले-नारंगी धारीदार फुंसियां। गंभीर होने पर फसल नष्ट हो सकती है।',
+    treatments: [
+      'Spray Propiconazole 25% EC @ 1 ml/litre at first symptom appearance.',
+      'Apply Tebuconazole 250 EC @ 1 ml/litre as preventive spray.',
+      'Use Triadimefon 25% WP @ 1 g/litre for severe infection.',
+      'Remove volunteer plants and alternate hosts from field borders.',
+      'Irrigate carefully to avoid leaf wetness.',
+    ],
+    treatmentsGu: [
+      'પ્રોપિકોન્ઝોલ 25% EC @ 1 ml/L પ્રથમ લક્ષણ.',
+      'ટેબ્યૂકોન્ઝોલ 250 EC @ 1 ml/L અટ.',
+      'ત્રિઓડ઼ ભ 25% WP @ 1 g/L ભારે.',
+      'ટ્ ઉ દ.',
+    ],
+    medicines: ['Tilt (Propiconazole)', 'Folicur (Tebuconazole)', 'Bayleton (Triadimefon)', 'Hexaconazole'],
+    prevention: 'Sow rust-resistant varieties early. Avoid heavy nitrogen fertilization.',
+  },
+  {
+    id: 'castor_botrytis',
+    crop: 'castor',
+    name: 'Botrytis Grey Mold',
+    nameGu: 'ઈ 灰色 BI',
+    nameHi: 'बोट्राइटिस ग्रे मोल्ड',
+    severity: 'medium',
+    symptoms: 'Grey fluffy mold on flowers and capsules, leading to capsule rot and seed damage.',
+    symptomsGu: 'ફૂ ` `).',
+    symptomsHi: 'फूलों और कैप्सूल पर भूरे रंग का फफूंद, कैप्सूल सड़न।',
+    treatments: [
+      'Spray Carbendazim 50% WP @ 1 g/litre at flowering stage.',
+      'Apply Iprodione 50% WP @ 1.5 g/litre for active infection.',
+      'Improve field drainage to reduce humidity.',
+      'Avoid dense planting — maintain proper spacing.',
+      'Remove and destroy infected plant parts.',
+    ],
+    treatmentsGu: [
+      'ફૂ ` B 50% WP @ 1 g/L.',
+      'Ip 50% WP @ 1.5 g/L.',
+      'ડ્ .',
+      'ઓ .',
+      'ચ. U .',
+    ],
+    medicines: ['Bavistin (Carbendazim)', 'Rovral (Iprodione)', 'Mancozeb', 'Copper Oxychloride'],
+    prevention: 'Good plant spacing, avoid excessive irrigation, use balanced fertilizers.',
+  },
+];
+
+// Mock detection — returns a random disease for the selected image.
+// Replace with real API in production (e.g., PlantNet, Crop Disease API).
+export function mockDetect() {
+  const idx = Math.floor(Math.random() * DISEASES.length);
+  const confidence = Math.floor(Math.random() * 20) + 76; // 76–95%
+  return { disease: DISEASES[idx], confidence };
+}
