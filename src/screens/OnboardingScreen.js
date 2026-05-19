@@ -18,7 +18,7 @@ const SLIDES = [
   {
     id: '1',
     emoji: '🌾',
-    title: 'Welcome to FarmerApp',
+    title: 'Welcome to HANARAD Farmer-Companion',
     description:
       'Your smart farming companion. Get real-time weather, crop advice, and agricultural alerts — all in one place.',
     bg: '#EEF2FF',

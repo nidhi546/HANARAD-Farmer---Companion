@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "FarmerApp",
+    "name": "HANARAD Farmer-Companion",
     "slug": "farmer-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,10 +15,19 @@
     "ios": {
       "supportsTablet": true,
       "icon": "./assets/icon.png",
+      "bundleIdentifier": "com.anonymous.farmerapp",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "FarmerApp needs your location to show local weather and crop advice."
-      },
-      "bundleIdentifier": "com.anonymous.farmerapp"
+        "NSLocationWhenInUseUsageDescription": "HANARAD Farmer-Companion needs your location to show local weather and crop advice.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "HANARAD Farmer-Companion uses background location only when you are walking your farm boundary to capture its outline.",
+        "NSCameraUsageDescription": "HANARAD Farmer-Companion uses the camera to scan crop leaves for disease detection.",
+        "NSPhotoLibraryUsageDescription": "HANARAD Farmer-Companion reads photos from your gallery to scan crop diseases.",
+        "NSPhotoLibraryAddUsageDescription": "HANARAD Farmer-Companion saves farm maps and crop scan results to your photos.",
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification",
+          "location"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,14 +37,27 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.farmerapp"
+      "package": "com.anonymous.farmerapp",
+      "googleServicesFile": "./android/app/google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyD8dRJ48Q0ij-ggn74ybov5xQ9gErzM2HY"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -44,16 +66,29 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "FarmerApp needs your location to show local weather and crop advice."
+          "locationWhenInUsePermission": "HANARAD Farmer-Companion needs your location to show local weather and crop advice.",
+          "locationAlwaysAndWhenInUsePermission": "HANARAD Farmer-Companion uses location in background when walking your farm boundary.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "FarmerApp needs photo access to scan crop diseases.",
-          "cameraPermission": "FarmerApp needs camera access to scan crop diseases."
+          "photosPermission": "HANARAD Farmer-Companion needs photo access to scan crop diseases.",
+          "cameraPermission": "HANARAD Farmer-Companion needs camera access to scan crop diseases."
         }
-      ]
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2E7D32",
+          "defaultChannel": "farmer-alerts",
+          "sounds": []
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

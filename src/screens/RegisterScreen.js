@@ -47,8 +47,18 @@ export default function RegisterScreen({ navigation }) {
     if (!validate()) return;
     setLoading(true);
     try {
-      await register(form.name.trim(), form.email.trim().toLowerCase(), form.phone.trim(), form.password);
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      // Derive a clean username from the display name (API requires no spaces)
+      const username = form.name.trim().toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '');
+
+      await register(
+        form.email.trim().toLowerCase(),
+        form.password,
+        username,
+        form.name.trim(),           // kept as displayName in local state
+      );
+      navigation.reset({ index: 0, routes: [{ name: 'ProfileSetup', params: { email: form.email.trim().toLowerCase() } }] });
     } catch (e) {
       setError(e.message || 'Registration failed. Please try again.');
     } finally {

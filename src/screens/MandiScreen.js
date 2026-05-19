@@ -14,6 +14,7 @@ import { useLocation } from '../context/LocationContext';
 import AppHeader       from '../components/AppHeader';
 import { getLivePrices } from '../api/mandiApi';
 import { FEATURES }      from '../config/apiKeys';
+import Analytics         from '../utils/analytics';
 
 // Commodity emoji map
 const CROP_ICON = {
@@ -141,7 +142,7 @@ export default function MandiScreen() {
   const [search, setSearch]         = useState('');
   const [activeMarket, setActiveMarket] = useState('All');
 
-  useEffect(() => { loadPrices(); }, []);
+  useEffect(() => { loadPrices(); Analytics.logScreenView('MandiScreen'); Analytics.logMandiViewed(); }, []);
 
   const loadPrices = async (isRefresh = false) => {
     if (!isRefresh) setLoading(true);

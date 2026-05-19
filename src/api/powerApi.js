@@ -67,7 +67,8 @@ export const getClimateZones = async (lat, lon, start, end) => {
 // 7-day forecast from Open-Meteo
 export const getOpenMeteoForecast = async (lat, lon) => {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,wind_speed_10m_max,relative_humidity_2m_max&timezone=auto&forecast_days=7`;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url, {}, 15000);
+  if (!res.ok) throw new Error(`Forecast HTTP ${res.status}`);
   return res.json();
 };
 

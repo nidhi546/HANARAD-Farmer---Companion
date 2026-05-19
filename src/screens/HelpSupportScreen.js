@@ -194,7 +194,7 @@ export default function HelpSupportScreen() {
         </View>
         <View style={[styles.infoRow, { marginBottom: 0 }]}>
           <Text style={styles.infoKey}>{t('developer')}</Text>
-          <Text style={styles.infoValue}>FarmerApp Team</Text>
+          <Text style={styles.infoValue}>HANARAD Team</Text>
         </View>
       </View>
 

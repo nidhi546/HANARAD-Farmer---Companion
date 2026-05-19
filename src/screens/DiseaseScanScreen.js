@@ -8,25 +8,20 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Dimensions,
+  TouchableOpacity, Dimensions, Alert, Image, ActivityIndicator,
 } from 'react-native';
-import { useLanguage } from '../context/LanguageContext';
-import { useTheme }    from '../context/ThemeContext';
-import AppHeader       from '../components/AppHeader';
-import { DISEASES }    from '../constants/diseasesData';
+import * as ImagePicker from 'expo-image-picker';
+import { useLanguage }   from '../context/LanguageContext';
+import { useTheme }      from '../context/ThemeContext';
+import AppHeader         from '../components/AppHeader';
+import { DISEASES }      from '../constants/diseasesData';
+import { useCropMaster } from '../hooks/useCropMaster';
+import Analytics         from '../utils/analytics';
 
 const { width } = Dimensions.get('window');
 
-// ── Crops list ───────────────────────────────────────────────────────────
-const CROPS = [
-  { key: 'cotton',    icon: '🌿', label: 'Cotton'    },
-  { key: 'groundnut', icon: '🥜', label: 'Groundnut' },
-  { key: 'wheat',     icon: '🌾', label: 'Wheat'     },
-  { key: 'bajra',     icon: '🌾', label: 'Bajra'     },
-  { key: 'castor',    icon: '🌾', label: 'Castor'    },
-  { key: 'cumin',     icon: '🌱', label: 'Cumin'     },
-  { key: 'all',       icon: '🌍', label: 'All Crops' },
-];
+// "All Crops" is always the first filter option — added in-render, not in data
+const ALL_OPTION = { key: 'all', icon: '🌍', label: 'All Crops' };
 
 // Severity badge colours
 const SEV_COLOR = {
@@ -38,6 +33,15 @@ const SEV_COLOR = {
 function makeStyles(theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
+
+    // AI scan card
+    aiScanCard:   { margin: 16, borderRadius: 18, borderWidth: 1.5, padding: 16 },
+    aiScanTitle:  { fontSize: 16, fontWeight: '900', color: '#DC2626', marginBottom: 4 },
+    aiScanSub:    { fontSize: 13, color: '#7F1D1D', marginBottom: 14, lineHeight: 18 },
+    aiScanBtns:   { flexDirection: 'row', gap: 8 },
+    aiBtn:        { flex: 1, borderRadius: 14, paddingVertical: 12, alignItems: 'center', gap: 4 },
+    aiBtnIcon:    { fontSize: 20 },
+    aiBtnText:    { fontSize: 11, fontWeight: '800', color: '#fff' },
 
     // Offline badge
     offlineBadge: {
@@ -216,12 +220,52 @@ function DiseaseCard({ disease, styles, theme, language }) {
 }
 
 // ── Main Component ──────────────────────────────────────────────────────
-export default function DiseaseScanScreen() {
+export default function DiseaseScanScreen({ navigation }) {
   const { language } = useLanguage();
   const { theme }    = useTheme();
   const styles       = useMemo(() => makeStyles(theme), [theme]);
 
+  const { crops: cropList } = useCropMaster();
+
   const [selectedCrop, setSelectedCrop] = useState('all');
+  const [capturedImage, setCapturedImage] = useState(null);
+
+  async function openCamera() {
+    Analytics.logCropScanStarted('camera');
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Camera permission is required to scan disease.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+    if (!result.canceled && result.assets?.length > 0) {
+      setCapturedImage(result.assets[0].uri);
+      navigation.navigate('DiseaseResult', { imageUri: result.assets[0].uri });
+    }
+  }
+
+  async function openGallery() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Gallery permission is required to upload a photo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [4, 3],
+    });
+    if (!result.canceled && result.assets?.length > 0) {
+      setCapturedImage(result.assets[0].uri);
+      navigation.navigate('DiseaseResult', { imageUri: result.assets[0].uri });
+    }
+  }
 
   const filtered = useMemo(() => {
     if (selectedCrop === 'all') return DISEASES;
@@ -237,6 +281,26 @@ export default function DiseaseScanScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <AppHeader title="Disease Scanner" subtitle="Symptom Identifier" />
 
+      {/* AI Photo Scan section */}
+      <View style={[styles.aiScanCard, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}>
+        <Text style={styles.aiScanTitle}>📸 AI Photo Disease Scan</Text>
+        <Text style={styles.aiScanSub}>Take or upload a leaf/crop photo for instant AI diagnosis</Text>
+        <View style={styles.aiScanBtns}>
+          <TouchableOpacity style={[styles.aiBtn, { backgroundColor: '#DC2626' }]} onPress={openCamera}>
+            <Text style={styles.aiBtnIcon}>📷</Text>
+            <Text style={styles.aiBtnText}>Camera</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.aiBtn, { backgroundColor: '#7C3AED' }]} onPress={openGallery}>
+            <Text style={styles.aiBtnIcon}>🖼️</Text>
+            <Text style={styles.aiBtnText}>Gallery</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.aiBtn, { backgroundColor: '#059669' }]} onPress={() => navigation.navigate('DiseaseResult', {})}>
+            <Text style={styles.aiBtnIcon}>🔬</Text>
+            <Text style={styles.aiBtnText}>Demo Result</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Offline badge */}
       <View style={styles.offlineBadge}>
         <Text style={styles.offlineBadgeText}>
@@ -247,7 +311,7 @@ export default function DiseaseScanScreen() {
       {/* Crop selector */}
       <Text style={styles.sectionTitle}>SELECT CROP</Text>
       <View style={styles.cropGrid}>
-        {CROPS.map(c => (
+        {[ALL_OPTION, ...cropList.map(c => ({ key: c.name.toLowerCase(), icon: c.icon || '🌱', label: c.name }))].map(c => (
           <TouchableOpacity
             key={c.key}
             style={[styles.cropBtn, selectedCrop === c.key && styles.cropBtnActive]}

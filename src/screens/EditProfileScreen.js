@@ -1,41 +1,33 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, memo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   TextInput, Image, Alert, ActivityIndicator,
-  KeyboardAvoidingView, Platform, StatusBar,
+  KeyboardAvoidingView, Platform, StatusBar, Modal, Keyboard,
 } from 'react-native';
-import { SafeAreaView }   from 'react-native-safe-area-context';
-import * as ImagePicker   from 'expo-image-picker';
-import { useAuth }        from '../context/AuthContext';
-import { useLanguage }    from '../context/LanguageContext';
-import { useTheme }       from '../context/ThemeContext';
+import { SafeAreaView }     from 'react-native-safe-area-context';
+import DateTimePicker       from '@react-native-community/datetimepicker';
+import { pickFromCamera, pickFromGallery } from '../utils/imagePicker';
+import { useAuth }          from '../context/AuthContext';
+import { useLanguage }      from '../context/LanguageContext';
+import { useTheme }         from '../context/ThemeContext';
+import { updateProfileApi } from '../api/profileApi';
 
 // ── Constants ──────────────────────────────────────────────────────────────
-const INDIAN_STATES = [
-  'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh',
-  'Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka',
-  'Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram',
-  'Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana',
-  'Tripura','Uttar Pradesh','Uttarakhand','West Bengal',
-];
-
-// Weighted fields for completion %
 const COMPLETION_WEIGHTS = [
-  { key: 'name',    w: 20 },
-  { key: 'email',   w: 20 },
-  { key: 'phone',   w: 15 },
-  { key: 'photo',   w: 15 },
-  { key: 'city',    w: 10 },
-  { key: 'state',   w: 10 },
-  { key: 'dob',     w: 10 },
+  { key: 'name',  w: 20 },
+  { key: 'email', w: 20 },
+  { key: 'phone', w: 15 },
+  { key: 'photo', w: 15 },
+  { key: 'city',  w: 10 },
+  { key: 'state', w: 10 },
+  { key: 'dob',   w: 10 },
 ];
 
-function calcCompletion(form) {
-  const score = COMPLETION_WEIGHTS.reduce((sum, { key, w }) => {
-    const v = form[key];
+function calcCompletion(vals) {
+  return COMPLETION_WEIGHTS.reduce((sum, { key, w }) => {
+    const v = vals[key];
     return sum + (v && String(v).trim() !== '' ? w : 0);
   }, 0);
-  return score;
 }
 
 function getCompletionColor(pct) {
@@ -44,14 +36,200 @@ function getCompletionColor(pct) {
   return '#EF4444';
 }
 
+function parseDate(str) {
+  const parts = str.split('/');
+  if (parts.length === 3) {
+    const [d, m, y] = parts;
+    const dt = new Date(+y, +m - 1, +d);
+    if (!isNaN(dt.getTime())) return dt;
+  }
+  return new Date(2000, 0, 1);
+}
+
+function formatDate(date) {
+  const d = String(date.getDate()).padStart(2, '0');
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${d}/${m}/${date.getFullYear()}`;
+}
+
+// ── FormInput — defined OUTSIDE to prevent re-mount on every render ────────
+const FormInput = memo(React.forwardRef(function FormInput(
+  { label, value, onChangeText, placeholder, keyboardType, autoCapitalize,
+    returnKeyType, onSubmitEditing, error, required, theme, isLast },
+  ref,
+) {
+  return (
+    <>
+      <View style={fi.row}>
+        <Text style={[fi.label, { color: theme.subtext }]}>
+          {label}{required ? <Text style={fi.required}> *</Text> : null}
+        </Text>
+        <TextInput
+          ref={ref}
+          style={[
+            fi.input,
+            { color: theme.text, borderBottomColor: error ? '#EF4444' : theme.border },
+            isLast && fi.inputLast,
+          ]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={theme.subtext + '80'}
+          keyboardType={keyboardType || 'default'}
+          autoCapitalize={autoCapitalize || 'words'}
+          autoCorrect={false}
+          returnKeyType={returnKeyType || 'next'}
+          onSubmitEditing={onSubmitEditing}
+          blurOnSubmit={returnKeyType === 'done'}
+          underlineColorAndroid="transparent"
+        />
+        {error ? <Text style={fi.error}>{error}</Text> : null}
+      </View>
+      {!isLast && <View style={[fi.divider, { backgroundColor: theme.border }]} />}
+    </>
+  );
+}));
+
+const fi = StyleSheet.create({
+  row:      { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 4 },
+  label:    { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 },
+  required: { color: '#EF4444' },
+  input: {
+    fontSize: 15, paddingBottom: 10, paddingVertical: 0,
+    borderBottomWidth: 1,
+  },
+  inputLast: { borderBottomWidth: 0, paddingBottom: 12 },
+  divider:   { height: 1, marginHorizontal: 14 },
+  error:     { fontSize: 11, color: '#EF4444', marginTop: 2 },
+});
+
+// ── DOBField — native DateTimePicker (iOS modal / Android dialog) ──────────
+const DOBField = memo(function DOBField({ label, value, onChange, error, theme, isLast }) {
+  const [showPicker,  setShowPicker]  = useState(false);
+  const [iosTempDate, setIosTempDate] = useState(null);
+
+  const parsedDate  = value ? parseDate(value) : new Date(2000, 0, 1);
+  const displayText = value || 'Select date of birth';
+  const hasValue    = Boolean(value);
+
+  const openPicker = () => {
+    Keyboard.dismiss();
+    setIosTempDate(parsedDate);
+    setShowPicker(true);
+  };
+
+  if (Platform.OS === 'android') {
+    return (
+      <>
+        <View style={fi.row}>
+          <Text style={[fi.label, { color: theme.subtext }]}>{label}</Text>
+          <TouchableOpacity onPress={openPicker} activeOpacity={0.7}>
+            <Text style={[
+              fi.input,
+              { borderBottomColor: error ? '#EF4444' : theme.border },
+              { color: hasValue ? theme.text : theme.subtext + '80' },
+              isLast && fi.inputLast,
+            ]}>
+              {displayText}
+            </Text>
+          </TouchableOpacity>
+          {error ? <Text style={fi.error}>{error}</Text> : null}
+          {showPicker && (
+            <DateTimePicker
+              value={parsedDate}
+              mode="date"
+              display="default"
+              maximumDate={new Date()}
+              minimumDate={new Date(1940, 0, 1)}
+              onChange={(evt, date) => {
+                setShowPicker(false);
+                if (evt.type !== 'dismissed' && date) onChange(formatDate(date));
+              }}
+            />
+          )}
+        </View>
+        {!isLast && <View style={[fi.divider, { backgroundColor: theme.border }]} />}
+      </>
+    );
+  }
+
+  // iOS — bottom-sheet modal with spinner
+  return (
+    <>
+      <View style={fi.row}>
+        <Text style={[fi.label, { color: theme.subtext }]}>{label}</Text>
+        <TouchableOpacity onPress={openPicker} activeOpacity={0.7}>
+          <Text style={[
+            fi.input,
+            { borderBottomColor: error ? '#EF4444' : theme.border },
+            { color: hasValue ? theme.text : theme.subtext + '80' },
+            isLast && fi.inputLast,
+          ]}>
+            {displayText}
+          </Text>
+        </TouchableOpacity>
+        {error ? <Text style={fi.error}>{error}</Text> : null}
+      </View>
+      {!isLast && <View style={[fi.divider, { backgroundColor: theme.border }]} />}
+
+      <Modal visible={showPicker} transparent animationType="slide">
+        <TouchableOpacity
+          style={dobs.overlay}
+          onPress={() => setShowPicker(false)}
+          activeOpacity={1}
+        />
+        <View style={dobs.sheet}>
+          <View style={dobs.header}>
+            <TouchableOpacity onPress={() => setShowPicker(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={dobs.cancel}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={dobs.title}>{label}</Text>
+            <TouchableOpacity
+              onPress={() => { if (iosTempDate) onChange(formatDate(iosTempDate)); setShowPicker(false); }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={dobs.done}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <DateTimePicker
+            value={iosTempDate || parsedDate}
+            mode="date"
+            display="spinner"
+            maximumDate={new Date()}
+            minimumDate={new Date(1940, 0, 1)}
+            onChange={(_, date) => { if (date) setIosTempDate(date); }}
+            style={{ height: 200 }}
+          />
+        </View>
+      </Modal>
+    </>
+  );
+});
+
+const dobs = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+  sheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    paddingBottom: 32,
+  },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
+  },
+  title:  { fontSize: 16, fontWeight: '700', color: '#1F2937' },
+  cancel: { fontSize: 15, color: '#6B7280', fontWeight: '600' },
+  done:   { fontSize: 15, color: '#16A34A', fontWeight: '700' },
+});
+
 // ── Styles ─────────────────────────────────────────────────────────────────
-function makeStyles(theme, isDark) {
+function makeStyles(theme) {
   return StyleSheet.create({
-    root:   { flex: 1, backgroundColor: theme.background },
-    scroll: { flex: 1 },
+    root:          { flex: 1, backgroundColor: theme.background },
+    scroll:        { flex: 1 },
     scrollContent: { paddingBottom: 120 },
 
-    // Header bar
     header: {
       backgroundColor: theme.primary,
       flexDirection: 'row', alignItems: 'center',
@@ -62,29 +240,26 @@ function makeStyles(theme, isDark) {
       backgroundColor: 'rgba(255,255,255,0.18)',
       alignItems: 'center', justifyContent: 'center', marginRight: 12,
     },
-    backTxt:    { fontSize: 20, color: '#FFFFFF', fontWeight: '700' },
-    headerTitle:{ flex: 1, fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
+    backTxt:     { fontSize: 20, color: '#FFFFFF', fontWeight: '700' },
+    headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
     headerSave: {
       backgroundColor: 'rgba(255,255,255,0.22)',
       borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6,
     },
     headerSaveTxt: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
 
-    // Completion bar
     completionBox: {
       backgroundColor: theme.card,
-      marginHorizontal: 16, marginTop: 16, borderRadius: 14,
-      padding: 14,
+      marginHorizontal: 16, marginTop: 16, borderRadius: 14, padding: 14,
       shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
     },
-    completionRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-    completionLabel: { fontSize: 13, fontWeight: '700', color: theme.text },
-    completionPct:   { fontSize: 13, fontWeight: '800' },
-    progressTrack: { height: 8, backgroundColor: theme.border, borderRadius: 4, overflow: 'hidden' },
-    progressFill:  { height: 8, borderRadius: 4 },
+    completionRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    completionLabel:{ fontSize: 13, fontWeight: '700', color: theme.text },
+    completionPct:  { fontSize: 13, fontWeight: '800' },
+    progressTrack:  { height: 8, backgroundColor: theme.border, borderRadius: 4, overflow: 'hidden' },
+    progressFill:   { height: 8, borderRadius: 4 },
 
-    // Photo section
     photoSection: { alignItems: 'center', paddingVertical: 24 },
     photoWrap: {
       width: 110, height: 110, borderRadius: 55,
@@ -105,58 +280,29 @@ function makeStyles(theme, isDark) {
       borderWidth: 2, borderColor: theme.card,
     },
     photoBadgeTxt: { fontSize: 15 },
-    photoName: { fontSize: 18, fontWeight: '800', color: theme.text, marginTop: 10 },
-    photoEmail:{ fontSize: 13, color: theme.subtext, marginTop: 2 },
+    photoName:  { fontSize: 18, fontWeight: '800', color: theme.text, marginTop: 10 },
+    photoEmail: { fontSize: 13, color: theme.subtext, marginTop: 2 },
 
-    // Section
-    section: { marginHorizontal: 16, marginTop: 16 },
-    sectionHeader: {
-      flexDirection: 'row', alignItems: 'center', marginBottom: 10,
-    },
-    sectionIcon: { fontSize: 16, marginRight: 6 },
-    sectionTitle: { fontSize: 12, fontWeight: '700', color: theme.subtext, letterSpacing: 1 },
+    section:       { marginHorizontal: 16, marginTop: 16 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+    sectionIcon:   { fontSize: 16, marginRight: 6 },
+    sectionTitle:  { fontSize: 12, fontWeight: '700', color: theme.subtext, letterSpacing: 1 },
 
-    // Field card
     fieldCard: {
       backgroundColor: theme.card, borderRadius: 14, overflow: 'hidden',
       shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
     },
-    fieldRow: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 4 },
-    fieldLabel: { fontSize: 11, fontWeight: '700', color: theme.subtext, letterSpacing: 0.5, marginBottom: 4 },
-    fieldInput: {
-      fontSize: 15, color: theme.text, paddingBottom: 10,
-      borderBottomWidth: 1, borderBottomColor: theme.border,
-    },
-    fieldInputLast: { borderBottomWidth: 0, paddingBottom: 12 },
-    fieldDivider: { height: 1, backgroundColor: theme.border, marginHorizontal: 14 },
-    requiredDot: { color: '#EF4444' },
 
-    // Error text
-    errorText: { fontSize: 11, color: '#EF4444', marginTop: 4, marginLeft: 14 },
-
-    // Language switcher
-    langRow: { flexDirection: 'row', gap: 8, padding: 14 },
+    langRow:       { flexDirection: 'row', gap: 8, padding: 14 },
     langBtn: {
       flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
       borderWidth: 1.5, borderColor: theme.border, backgroundColor: theme.background,
     },
-    langBtnActive: { backgroundColor: theme.light, borderColor: theme.primary },
-    langBtnTxt:    { fontSize: 13, fontWeight: '700', color: theme.subtext },
+    langBtnActive:    { backgroundColor: theme.light, borderColor: theme.primary },
+    langBtnTxt:       { fontSize: 13, fontWeight: '700', color: theme.subtext },
     langBtnTxtActive: { color: theme.primary },
 
-    // Change password toggle
-    pwdToggle: {
-      backgroundColor: theme.card, borderRadius: 14,
-      padding: 14, flexDirection: 'row', alignItems: 'center',
-      shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
-    },
-    pwdToggleIcon: { fontSize: 18, marginRight: 10 },
-    pwdToggleTxt:  { flex: 1, fontSize: 14, fontWeight: '600', color: theme.text },
-    pwdToggleArrow:{ fontSize: 18, color: theme.subtext },
-
-    // Save button
     saveBtn: {
       position: 'absolute', bottom: 24, left: 24, right: 24,
       backgroundColor: theme.primary, borderRadius: 16,
@@ -168,9 +314,8 @@ function makeStyles(theme, isDark) {
     saveBtnDisabled: { opacity: 0.65 },
     saveBtnTxt: { fontSize: 16, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.3 },
 
-    // Toast
     toast: {
-      position: 'absolute', top: 16, left: 24, right: 24,
+      position: 'absolute', top: 80, left: 24, right: 24,
       borderRadius: 12, padding: 14,
       flexDirection: 'row', alignItems: 'center', gap: 10,
       shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
@@ -182,189 +327,132 @@ function makeStyles(theme, isDark) {
 
 // ══════════════════════════════════════════════════════════════════════════
 export default function EditProfileScreen({ navigation }) {
-  const { user, updateUser }       = useAuth();
+  const { user, updateUser }            = useAuth();
   const { t, language, changeLanguage } = useLanguage();
-  const { theme, isDark }          = useTheme();
-  const styles                     = useMemo(() => makeStyles(theme, isDark), [theme, isDark]);
+  const { theme, isDark }               = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
 
-  // ── Form state ─────────────────────────────────────────────────────────
-  const [form, setForm] = useState({
-    name:     user?.name     || '',
-    username: user?.username || '',
-    email:    user?.email    || '',
-    phone:    user?.phone    || '',
-    dob:      user?.dob      || '',
-    address:  user?.address  || '',
-    city:     user?.city     || '',
-    state:    user?.state    || '',
-    country:  user?.country  || 'India',
-    photo:    user?.photo    || null,
-  });
+  // ── Individual field state (avoids whole-form re-render on each keystroke)
+  const [name,    setName]    = useState(user?.name     || '');
+  const [username,setUsername]= useState(user?.username || '');
+  const [email,   setEmail]   = useState(user?.email    || '');
+  const [phone,   setPhone]   = useState(user?.phone    || '');
+  const [dob,     setDob]     = useState(user?.dob      || '');
+  const [address, setAddress] = useState(user?.address  || '');
+  const [city,    setCity]    = useState(user?.city     || '');
+  const [state_,  setState_]  = useState(user?.state    || '');
+  const [country, setCountry] = useState(user?.country  || 'India');
+  const [photo,   setPhoto]   = useState(user?.photo    || null);
 
-  const [errors,    setErrors]    = useState({});
-  const [saving,    setSaving]    = useState(false);
-  const [showPwd,   setShowPwd]   = useState(false);
-  const [pwdForm,   setPwdForm]   = useState({ current: '', newPwd: '', confirm: '' });
-  const [pwdErrors, setPwdErrors] = useState({});
-  const [toast,     setToast]     = useState(null); // { msg, ok }
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [toast,  setToast]  = useState(null);
 
-  const completion = useMemo(() => calcCompletion(form), [form]);
+  // ── Refs for keyboard focus chain ──────────────────────────────────────
+  const nameRef     = useRef(null);
+  const usernameRef = useRef(null);
+  const emailRef    = useRef(null);
+  const phoneRef    = useRef(null);
+  const addressRef  = useRef(null);
+  const cityRef     = useRef(null);
+  const stateRef    = useRef(null);
+  const countryRef  = useRef(null);
+
+  // ── Stable onChange callbacks (referential equality for memo) ──────────
+  const onChangeName     = useCallback(v => { setName(v);     setErrors(e => ({ ...e, name: null }));    }, []);
+  const onChangeUsername = useCallback(v => { setUsername(v); setErrors(e => ({ ...e, username: null })); }, []);
+  const onChangeEmail    = useCallback(v => { setEmail(v);    setErrors(e => ({ ...e, email: null }));   }, []);
+  const onChangePhone    = useCallback(v => { setPhone(v);    setErrors(e => ({ ...e, phone: null }));   }, []);
+  const onChangeDob      = useCallback(v => { setDob(v);      setErrors(e => ({ ...e, dob: null }));     }, []);
+  const onChangeAddress  = useCallback(v => { setAddress(v);  setErrors(e => ({ ...e, address: null })); }, []);
+  const onChangeCity     = useCallback(v => { setCity(v);     setErrors(e => ({ ...e, city: null }));    }, []);
+  const onChangeState_   = useCallback(v => { setState_(v);   setErrors(e => ({ ...e, state: null }));   }, []);
+  const onChangeCountry  = useCallback(v => { setCountry(v);  setErrors(e => ({ ...e, country: null })); }, []);
+
+  // ── Completion ─────────────────────────────────────────────────────────
+  const completion = useMemo(
+    () => calcCompletion({ name, email, phone, photo, city, state: state_, dob }),
+    [name, email, phone, photo, city, state_, dob],
+  );
   const completionColor = getCompletionColor(completion);
 
-  const set = useCallback((key, val) => {
-    setForm(f => ({ ...f, [key]: val }));
-    setErrors(e => ({ ...e, [key]: null }));
-  }, []);
+  const getInitials = (n) =>
+    (n || 'FA').split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2);
 
-  const getInitials = (name) =>
-    (name || 'FA').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
-  // ── Toast helper ───────────────────────────────────────────────────────
+  // ── Toast ──────────────────────────────────────────────────────────────
   const showToast = (msg, ok = true) => {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3000);
   };
 
   // ── Photo picker ───────────────────────────────────────────────────────
-  const handlePhoto = () => {
+  const handlePhoto = useCallback(() => {
     Alert.alert(t('photoOptions'), '', [
-      {
-        text: t('fromCamera'), onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-          const res = await ImagePicker.launchCameraAsync({
-            allowsEditing: true, aspect: [1, 1], quality: 0.7,
-          });
-          if (!res.canceled) set('photo', res.assets[0].uri);
-        },
-      },
-      {
-        text: t('fromGallery'), onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission needed'); return; }
-          const res = await ImagePicker.launchImageLibraryAsync({
-            allowsEditing: true, aspect: [1, 1], quality: 0.7,
-          });
-          if (!res.canceled) set('photo', res.assets[0].uri);
-        },
-      },
-      form.photo ? { text: t('removePhoto'), style: 'destructive', onPress: () => set('photo', null) } : null,
+      { text: t('fromCamera'),  onPress: async () => { const u = await pickFromCamera(t);  if (u) setPhoto(u); } },
+      { text: t('fromGallery'), onPress: async () => { const u = await pickFromGallery(t); if (u) setPhoto(u); } },
+      photo
+        ? { text: t('removePhoto'), style: 'destructive', onPress: () => setPhoto(null) }
+        : null,
       { text: t('cancel'), style: 'cancel' },
     ].filter(Boolean));
-  };
+  }, [photo, t]);
 
-  // ── Validation ──────────────────────────────────────────────────────────
+  // ── Validation ─────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
-    if (!form.name.trim())  e.name  = t('requiredField');
-    if (!form.email.trim()) e.email = t('requiredField');
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = t('invalidEmail');
-    if (form.phone.trim() && !/^[+\d\s\-()]{8,15}$/.test(form.phone.trim())) e.phone = t('invalidPhone');
+    if (!name.trim())  e.name  = t('requiredField');
+    if (!email.trim()) e.email = t('requiredField');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) e.email = t('invalidEmail');
+    if (phone.trim() && !/^[+\d\s\-()]{8,15}$/.test(phone.trim())) e.phone = t('invalidPhone');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const validatePwd = () => {
-    const e = {};
-    if (!pwdForm.current) e.current = t('requiredField');
-    if (!pwdForm.newPwd || pwdForm.newPwd.length < 6) e.newPwd = 'Min. 6 characters';
-    if (pwdForm.newPwd !== pwdForm.confirm) e.confirm = t('passwordMismatch');
-    setPwdErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  // ── Save profile ────────────────────────────────────────────────────────
+  // ── Save ───────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!validate()) return;
     setSaving(true);
     try {
-      await updateUser({
-        name:     form.name.trim(),
-        username: form.username.trim(),
-        email:    form.email.trim().toLowerCase(),
-        phone:    form.phone.trim(),
-        dob:      form.dob.trim(),
-        address:  form.address.trim(),
-        city:     form.city.trim(),
-        state:    form.state.trim(),
-        country:  form.country.trim(),
-        photo:    form.photo,
+      const docId = user?._id ?? user?.id;
+      if (!docId) throw new Error('User session not found. Please log in again.');
+
+      await updateProfileApi(docId, {
+        username: (username.trim() || name.trim()).toLowerCase().replace(/\s+/g, '_'),
+        mobile:   phone.trim(),
+        dob:      dob.trim(),
+        address:  address.trim(),
+        city:     city.trim(),
+        state:    state_.trim(),
+        language,
       });
+
+      await updateUser({
+        name:    name.trim(),
+        username: username.trim(),
+        email:   email.trim().toLowerCase(),
+        phone:   phone.trim(),
+        dob:     dob.trim(),
+        address: address.trim(),
+        city:    city.trim(),
+        state:   state_.trim(),
+        country: country.trim(),
+        photo,
+      });
+
       showToast(t('profileUpdated'), true);
     } catch (e) {
-      showToast(e.message || 'Failed to save.', false);
+      showToast(e.message || 'Failed to save profile.', false);
     } finally {
       setSaving(false);
     }
   };
 
-  // ── Change password ─────────────────────────────────────────────────────
-  const handleChangePwd = async () => {
-    if (!validatePwd()) return;
-    setSaving(true);
-    try {
-      // Local mock: just save the new password flag
-      await updateUser({ passwordChanged: true });
-      setPwdForm({ current: '', newPwd: '', confirm: '' });
-      setShowPwd(false);
-      showToast(t('passwordChanged'), true);
-    } catch (e) {
-      showToast('Failed to change password.', false);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ── Field component ─────────────────────────────────────────────────────
-  const Field = ({ label, fkey, placeholder, keyboard = 'default', required = false, isLast = false, secure = false }) => (
-    <>
-      <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>
-          {label}{required && <Text style={styles.requiredDot}> *</Text>}
-        </Text>
-        <TextInput
-          style={[styles.fieldInput, isLast && styles.fieldInputLast,
-            errors[fkey] && { borderBottomColor: '#EF4444' }]}
-          value={form[fkey]}
-          onChangeText={v => set(fkey, v)}
-          placeholder={placeholder}
-          placeholderTextColor={theme.subtext + '80'}
-          keyboardType={keyboard}
-          autoCapitalize={keyboard === 'email-address' ? 'none' : 'words'}
-          secureTextEntry={secure}
-        />
-        {errors[fkey] && <Text style={styles.errorText}>{errors[fkey]}</Text>}
-      </View>
-      {!isLast && <View style={styles.fieldDivider} />}
-    </>
-  );
-
-  const PwdField = ({ label, fkey, isLast = false }) => (
-    <>
-      <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>{label}</Text>
-        <TextInput
-          style={[styles.fieldInput, isLast && styles.fieldInputLast,
-            pwdErrors[fkey] && { borderBottomColor: '#EF4444' }]}
-          value={pwdForm[fkey]}
-          onChangeText={v => { setPwdForm(p => ({ ...p, [fkey]: v })); setPwdErrors(e => ({ ...e, [fkey]: null })); }}
-          placeholder="••••••••"
-          placeholderTextColor={theme.subtext + '80'}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-        {pwdErrors[fkey] && <Text style={styles.errorText}>{pwdErrors[fkey]}</Text>}
-      </View>
-      {!isLast && <View style={styles.fieldDivider} />}
-    </>
-  );
-
-  // ── Render ──────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={theme.primary} />
 
-      {/* ── Header ── */}
+      {/* Header */}
       <View style={[styles.header, { paddingTop: 8 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.7}>
           <Text style={styles.backTxt}>‹</Text>
@@ -383,9 +471,9 @@ export default function EditProfileScreen({ navigation }) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={Keyboard.dismiss}
         >
-
-          {/* ── Completion bar ── */}
+          {/* Completion bar */}
           <View style={styles.completionBox}>
             <View style={styles.completionRow}>
               <Text style={styles.completionLabel}>{t('profileCompletion')}</Text>
@@ -396,52 +484,148 @@ export default function EditProfileScreen({ navigation }) {
             </View>
           </View>
 
-          {/* ── Photo ── */}
+          {/* Photo */}
           <View style={styles.photoSection}>
             <TouchableOpacity onPress={handlePhoto} activeOpacity={0.85}>
               <View style={styles.photoWrap}>
-                {form.photo
-                  ? <Image source={{ uri: form.photo }} style={styles.photoImg} />
-                  : <View style={styles.photoInit}><Text style={styles.photoInitTxt}>{getInitials(form.name)}</Text></View>}
+                {photo
+                  ? <Image source={{ uri: photo }} style={styles.photoImg} />
+                  : <View style={styles.photoInit}><Text style={styles.photoInitTxt}>{getInitials(name)}</Text></View>}
                 <View style={styles.photoBadge}>
                   <Text style={styles.photoBadgeTxt}>📷</Text>
                 </View>
               </View>
             </TouchableOpacity>
-            <Text style={styles.photoName}>{form.name || t('farmer')}</Text>
-            <Text style={styles.photoEmail}>{form.email || ''}</Text>
+            <Text style={styles.photoName}>{name || t('farmer')}</Text>
+            <Text style={styles.photoEmail}>{email || ''}</Text>
           </View>
 
-          {/* ── Personal Info ── */}
+          {/* Personal Info */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionIcon}>👤</Text>
               <Text style={styles.sectionTitle}>{t('profileInfo')}</Text>
             </View>
             <View style={styles.fieldCard}>
-              <Field label={t('fullName')}    fkey="name"     placeholder="e.g. Ramesh Patel" required />
-              <Field label={t('usernameLabel')} fkey="username" placeholder="e.g. ramesh_farmer" />
-              <Field label={t('emailAddress')} fkey="email"   placeholder="you@example.com" keyboard="email-address" required />
-              <Field label={t('phoneNumber')} fkey="phone"    placeholder="+91 98765 43210" keyboard="phone-pad" />
-              <Field label={t('dateOfBirth')} fkey="dob"      placeholder="DD/MM/YYYY" keyboard="numeric" isLast />
+              <FormInput
+                ref={nameRef}
+                label={t('fullName')}
+                value={name}
+                onChangeText={onChangeName}
+                placeholder="e.g. Ramesh Patel"
+                autoCapitalize="words"
+                returnKeyType="next"
+                onSubmitEditing={() => usernameRef.current?.focus()}
+                error={errors.name}
+                required
+                theme={theme}
+              />
+              <FormInput
+                ref={usernameRef}
+                label={t('usernameLabel')}
+                value={username}
+                onChangeText={onChangeUsername}
+                placeholder="e.g. ramesh_farmer"
+                autoCapitalize="none"
+                returnKeyType="next"
+                onSubmitEditing={() => emailRef.current?.focus()}
+                error={errors.username}
+                theme={theme}
+              />
+              <FormInput
+                ref={emailRef}
+                label={t('emailAddress')}
+                value={email}
+                onChangeText={onChangeEmail}
+                placeholder="you@example.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                returnKeyType="next"
+                onSubmitEditing={() => phoneRef.current?.focus()}
+                error={errors.email}
+                required
+                theme={theme}
+              />
+              <FormInput
+                ref={phoneRef}
+                label={t('phoneNumber')}
+                value={phone}
+                onChangeText={onChangePhone}
+                placeholder="+91 98765 43210"
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
+                error={errors.phone}
+                theme={theme}
+              />
+              <DOBField
+                label={t('dateOfBirth')}
+                value={dob}
+                onChange={onChangeDob}
+                error={errors.dob}
+                theme={theme}
+                isLast
+              />
             </View>
           </View>
 
-          {/* ── Location ── */}
+          {/* Location */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionIcon}>📍</Text>
               <Text style={styles.sectionTitle}>{t('locationInfo')}</Text>
             </View>
             <View style={styles.fieldCard}>
-              <Field label={t('addressLabel')}  fkey="address" placeholder={t('addressPlaceholder')} />
-              <Field label={t('cityLabel')}     fkey="city"    placeholder={t('cityPlaceholder')} />
-              <Field label={t('stateLabel')}    fkey="state"   placeholder={t('statePlaceholder')} />
-              <Field label={t('countryLabel')}  fkey="country" placeholder="India" isLast />
+              <FormInput
+                ref={addressRef}
+                label={t('addressLabel')}
+                value={address}
+                onChangeText={onChangeAddress}
+                placeholder={t('addressPlaceholder')}
+                returnKeyType="next"
+                onSubmitEditing={() => cityRef.current?.focus()}
+                error={errors.address}
+                theme={theme}
+              />
+              <FormInput
+                ref={cityRef}
+                label={t('cityLabel')}
+                value={city}
+                onChangeText={onChangeCity}
+                placeholder={t('cityPlaceholder')}
+                returnKeyType="next"
+                onSubmitEditing={() => stateRef.current?.focus()}
+                error={errors.city}
+                theme={theme}
+              />
+              <FormInput
+                ref={stateRef}
+                label={t('stateLabel')}
+                value={state_}
+                onChangeText={onChangeState_}
+                placeholder={t('statePlaceholder')}
+                returnKeyType="next"
+                onSubmitEditing={() => countryRef.current?.focus()}
+                error={errors.state}
+                theme={theme}
+              />
+              <FormInput
+                ref={countryRef}
+                label={t('countryLabel')}
+                value={country}
+                onChangeText={onChangeCountry}
+                placeholder="India"
+                returnKeyType="done"
+                onSubmitEditing={Keyboard.dismiss}
+                error={errors.country}
+                theme={theme}
+                isLast
+              />
             </View>
           </View>
 
-          {/* ── Language ── */}
+          {/* Language */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionIcon}>🌐</Text>
@@ -449,7 +633,11 @@ export default function EditProfileScreen({ navigation }) {
             </View>
             <View style={styles.fieldCard}>
               <View style={styles.langRow}>
-                {[{ code: 'en', label: 'English' }, { code: 'hi', label: 'हिंदी' }, { code: 'gu', label: 'ગુજરાતી' }].map(l => (
+                {[
+                  { code: 'en', label: 'English' },
+                  { code: 'hi', label: 'हिंदी' },
+                  { code: 'gu', label: 'ગુજરાતી' },
+                ].map(l => (
                   <TouchableOpacity
                     key={l.code}
                     style={[styles.langBtn, language === l.code && styles.langBtnActive]}
@@ -465,41 +653,10 @@ export default function EditProfileScreen({ navigation }) {
             </View>
           </View>
 
-          {/* ── Change Password ── */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionIcon}>🔒</Text>
-              <Text style={styles.sectionTitle}>{t('securitySection')}</Text>
-            </View>
-            <TouchableOpacity style={styles.pwdToggle} onPress={() => setShowPwd(p => !p)} activeOpacity={0.7}>
-              <Text style={styles.pwdToggleIcon}>🔑</Text>
-              <Text style={styles.pwdToggleTxt}>{t('changePassword')}</Text>
-              <Text style={styles.pwdToggleArrow}>{showPwd ? '▾' : '›'}</Text>
-            </TouchableOpacity>
-
-            {showPwd && (
-              <View style={[styles.fieldCard, { marginTop: 8 }]}>
-                <PwdField label={t('currentPassword')} fkey="current" />
-                <PwdField label={t('newPassword')}     fkey="newPwd" />
-                <PwdField label={t('confirmNewPassword')} fkey="confirm" isLast />
-                <TouchableOpacity
-                  style={{ margin: 14, marginTop: 4, backgroundColor: theme.primary, borderRadius: 10, padding: 12, alignItems: 'center' }}
-                  onPress={handleChangePwd}
-                  disabled={saving}
-                  activeOpacity={0.85}
-                >
-                  {saving
-                    ? <ActivityIndicator color="#FFFFFF" />
-                    : <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>{t('changePassword')}</Text>}
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ── Floating Save ── */}
+      {/* Floating Save button */}
       <TouchableOpacity
         style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
         onPress={handleSave}
@@ -511,9 +668,9 @@ export default function EditProfileScreen({ navigation }) {
           : <><Text style={{ fontSize: 18 }}>💾</Text><Text style={styles.saveBtnTxt}>{t('saveChanges')}</Text></>}
       </TouchableOpacity>
 
-      {/* ── Toast ── */}
+      {/* Toast */}
       {toast && (
-        <View style={[styles.toast, { backgroundColor: toast.ok ? '#DCFCE7' : '#FEF2F2', top: 80 }]}>
+        <View style={[styles.toast, { backgroundColor: toast.ok ? '#DCFCE7' : '#FEF2F2' }]}>
           <Text style={{ fontSize: 18 }}>{toast.ok ? '✅' : '❌'}</Text>
           <Text style={[styles.toastTxt, { color: toast.ok ? '#15803D' : '#DC2626' }]}>{toast.msg}</Text>
         </View>

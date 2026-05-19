@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,49 +10,65 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '../context/AuthContext';
-import { useLanguage } from '../context/LanguageContext';
-import { THEME } from '../constants/theme';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
+import { useTheme } from "../context/ThemeContext";
+import Analytics from "../utils/analytics";
 
 export default function LoginScreen({ navigation }) {
-  const { login } = useAuth();
+  const { sendOtp } = useAuth();
   const { t } = useLanguage();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const { theme, isDark } = useTheme();
+  const T = theme; // shorthand
+
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+
+  const styles = useMemo(() => makeStyles(T), [T]);
 
   const validate = () => {
-    if (!email.trim()) { setError(t('emailAddress') + ' required.'); return false; }
+    if (!email.trim()) {
+      setError(t("emailAddress") + " is required.");
+      return false;
+    }
     const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailReg.test(email.trim())) { setError('Please enter a valid email.'); return false; }
-    if (!password) { setError(t('password') + ' required.'); return false; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return false; }
+    if (!emailReg.test(email.trim())) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
     return true;
   };
 
   const handleLogin = async () => {
-    setError('');
+    setError("");
     if (!validate()) return;
     setLoading(true);
     try {
-      await login(email.trim().toLowerCase(), password);
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+      await sendOtp(email.trim().toLowerCase());
+      Analytics.logLogin("email");
+      Analytics.logScreenView("OTPScreen");
+      navigation.navigate("OTP", {
+        email: email.trim().toLowerCase(),
+        isRegister: false,
+      });
     } catch (e) {
-      setError(e.message || 'Login failed. Please try again.');
+      setError(e.message || "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor={THEME.background} />
+    <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
+      <StatusBar
+        barStyle={isDark ? "light-content" : "dark-content"}
+        backgroundColor={T.background}
+      />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -65,82 +81,67 @@ export default function LoginScreen({ navigation }) {
             <View style={styles.logoCircle}>
               <Text style={styles.logoEmoji}>🌾</Text>
             </View>
-            <Text style={styles.appName}>FarmerApp</Text>
+            <Text style={styles.appName}>HANARAD Farmer-Companion</Text>
             <Text style={styles.tagline}>Smart Farming, Better Harvest</Text>
           </View>
 
           {/* Card */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t('welcomeBack')}</Text>
-            <Text style={styles.cardSub}>{t('signInAccount')}</Text>
+            <Text style={styles.cardTitle}>{t("welcomeBack")}</Text>
+            <Text style={styles.cardSub}>{t("signInAccount")}</Text>
 
             {error ? (
               <View style={styles.errorBox}>
-                <Text style={styles.errorText}>⚠️  {error}</Text>
+                <Text style={styles.errorText}>⚠️ {error}</Text>
               </View>
             ) : null}
 
             {/* Email */}
-            <Text style={styles.label}>{t('emailAddress')}</Text>
+            <Text style={styles.label}>{t("emailAddress")}</Text>
             <View style={styles.inputWrapper}>
               <Text style={styles.inputIcon}>✉️</Text>
               <TextInput
                 style={styles.input}
-                placeholder={t('emailPlaceholder')}
-                placeholderTextColor={THEME.subtext}
+                placeholder={t("emailPlaceholder")}
+                placeholderTextColor={T.subtext}
                 value={email}
-                onChangeText={(v) => { setEmail(v); setError(''); }}
+                onChangeText={(v) => {
+                  setEmail(v);
+                  setError("");
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
             </View>
 
-            {/* Password */}
-            <Text style={styles.label}>{t('password')}</Text>
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>🔒</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={t('passwordPlaceholder')}
-                placeholderTextColor={THEME.subtext}
-                value={password}
-                onChangeText={(v) => { setPassword(v); setError(''); }}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
-              </TouchableOpacity>
+            {/* OTP hint */}
+            <View style={styles.otpHintBox}>
+              <Text style={styles.otpHintText}>
+                📱 We'll send a 6-digit OTP to your email
+              </Text>
             </View>
 
-            {/* Forgot Password */}
-            <TouchableOpacity
-              style={styles.forgotRow}
-              onPress={() => navigation.navigate('ForgotPassword')}
-            >
-              <Text style={styles.forgotText}>{t('forgotPassword')}</Text>
-            </TouchableOpacity>
-
-            {/* Login Button */}
+            {/* Send OTP Button */}
             <TouchableOpacity
               style={[styles.loginBtn, loading && styles.loginBtnDisabled]}
               onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.85}
             >
-              {loading
-                ? <ActivityIndicator color={THEME.white} />
-                : <Text style={styles.loginBtnText}>{t('signIn')}</Text>
-              }
+              {loading ? (
+                <ActivityIndicator color={T.white} />
+              ) : (
+                <Text style={styles.loginBtnText}>Send OTP →</Text>
+              )}
             </TouchableOpacity>
           </View>
 
           {/* Register link */}
           <View style={styles.registerRow}>
-            <Text style={styles.registerText}>{t('noAccount')}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.registerLink}>{t('createAccount')}</Text>
+            <Text style={styles.registerText}>{t("noAccount")}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+              <Text style={styles.registerLink}>{t("createAccount")}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -149,90 +150,115 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: THEME.background },
-  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32 },
-  logoSection: { alignItems: 'center', marginTop: 40, marginBottom: 32 },
-  logoCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: THEME.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    shadowColor: THEME.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  logoEmoji: { fontSize: 44 },
-  appName: { fontSize: 26, fontWeight: '800', color: THEME.text, letterSpacing: -0.5 },
-  tagline: { fontSize: 13, color: THEME.subtext, marginTop: 4 },
-  card: {
-    backgroundColor: THEME.white,
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  cardTitle: { fontSize: 22, fontWeight: '800', color: THEME.text, marginBottom: 4 },
-  cardSub: { fontSize: 14, color: THEME.subtext, marginBottom: 20 },
-  errorBox: {
-    backgroundColor: '#FEF2F2',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-  },
-  errorText: { fontSize: 13, color: THEME.danger, fontWeight: '500' },
-  label: { fontSize: 13, fontWeight: '600', color: THEME.text, marginBottom: 6 },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.inputBg,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: THEME.border,
-    marginBottom: 16,
-    paddingHorizontal: 14,
-    height: 52,
-  },
-  inputIcon: { fontSize: 16, marginRight: 10 },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: THEME.text,
-    paddingVertical: 0,
-  },
-  eyeBtn: { padding: 4 },
-  eyeIcon: { fontSize: 18 },
-  forgotRow: { alignSelf: 'flex-end', marginBottom: 20 },
-  forgotText: { fontSize: 13, color: THEME.primary, fontWeight: '600' },
-  loginBtn: {
-    backgroundColor: THEME.primary,
-    borderRadius: 14,
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: THEME.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  loginBtnDisabled: { opacity: 0.7 },
-  loginBtnText: { fontSize: 16, fontWeight: '700', color: THEME.white, letterSpacing: 0.3 },
-  registerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  registerText: { fontSize: 14, color: THEME.subtext },
-  registerLink: { fontSize: 14, color: THEME.primary, fontWeight: '700' },
-});
+function makeStyles(T) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: T.background },
+    scroll: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32 },
+    logoSection: { alignItems: "center", marginTop: 40, marginBottom: 32 },
+    logoCircle: {
+      width: 88,
+      height: 88,
+      borderRadius: 44,
+      backgroundColor: T.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 12,
+      shadowColor: T.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    logoEmoji: { fontSize: 44 },
+    appName: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: T.text,
+    },
+    tagline: { fontSize: 13, color: T.subtext, marginTop: 4 },
+    card: {
+      backgroundColor: T.card,
+      borderRadius: 20,
+      padding: 24,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      elevation: 4,
+      borderWidth: 1,
+      borderColor: T.border,
+    },
+    cardTitle: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: T.text,
+      marginBottom: 4,
+    },
+    cardSub: { fontSize: 14, color: T.subtext, marginBottom: 20 },
+    errorBox: {
+      backgroundColor: T.dangerLight,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: T.danger + "44",
+    },
+    errorText: { fontSize: 13, color: T.danger, fontWeight: "500" },
+    label: { fontSize: 13, fontWeight: "600", color: T.text, marginBottom: 6 },
+    inputWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: T.inputBg,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: T.border,
+      marginBottom: 16,
+      paddingHorizontal: 14,
+      height: 52,
+    },
+    inputIcon: { fontSize: 16, marginRight: 10 },
+    input: { flex: 1, fontSize: 15, color: T.text, paddingVertical: 0 },
+    eyeBtn: { padding: 4 },
+    eyeIcon: { fontSize: 18 },
+    otpHintBox: {
+      backgroundColor: "#FFFBEB",
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: "#FDE68A",
+      padding: 12,
+      marginBottom: 20,
+    },
+    otpHintText: {
+      fontSize: 13,
+      color: "#92400E",
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    loginBtn: {
+      backgroundColor: T.primary,
+      borderRadius: 14,
+      height: 52,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: T.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    loginBtnDisabled: { opacity: 0.7 },
+    loginBtnText: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: T.inverse ?? "#fff",
+      letterSpacing: 0.3,
+    },
+    registerRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      marginTop: 24,
+    },
+    registerText: { fontSize: 14, color: T.subtext },
+    registerLink: { fontSize: 14, color: T.primary, fontWeight: "700" },
+  });
+}

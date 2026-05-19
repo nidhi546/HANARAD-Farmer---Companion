@@ -1,60 +1,107 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useLanguage } from '../context/LanguageContext';
-import { useTheme }    from '../context/ThemeContext';
+/**
+ * CropCard — shows a crop with suitability badge
+ * Updated: uses Card wrapper, platform ripple, platform shadow
+ */
+
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { useLanguage } from "../context/LanguageContext";
+import { useTheme } from "../context/ThemeContext";
+import Card from "./Card";
+import { typography, spacing, radius } from "../utils/ui";
+
+export default function CropCard({ crop, suitable, onPress }) {
+  const { t } = useLanguage();
+  const { theme, isDark } = useTheme();
+  const styles = useMemo(() => makeStyles(theme, isDark), [theme, isDark]);
+
+  const accentColor = suitable ? theme.primary : theme.border;
+  const iconBg = suitable ? theme.light : isDark ? "#374151" : "#F1F5F9";
+  const badgeBg = suitable ? theme.light : isDark ? "#374151" : "#F1F5F9";
+  const badgeTextColor = suitable ? theme.primary : theme.subtext;
+
+  return (
+    <Card
+      onPress={onPress}
+      borderLeft={accentColor}
+      noPadding
+      style={styles.card}
+    >
+      <View style={styles.inner}>
+        <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
+          <Text style={styles.icon}>{crop.icon}</Text>
+        </View>
+
+        <View style={styles.info}>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={1}>
+              {crop.name}
+            </Text>
+            <View style={[styles.badge, { backgroundColor: badgeBg }]}>
+              <Text style={[styles.badgeText, { color: badgeTextColor }]}>
+                {suitable ? `✅ ${t("suitable")}` : `❌ ${t("notNow")}`}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.season}>{crop.season}</Text>
+          <Text style={styles.tip} numberOfLines={2}>
+            {crop.tip}
+          </Text>
+        </View>
+      </View>
+    </Card>
+  );
+}
 
 function makeStyles(theme) {
   return StyleSheet.create({
     card: {
-      backgroundColor: theme.card,
-      borderRadius: 14, padding: 14, marginBottom: 10,
-      flexDirection: 'row', alignItems: 'center', borderLeftWidth: 4,
-      shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
+      marginBottom: spacing[2],
+    },
+    inner: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: spacing[3] + 1,
     },
     iconCircle: {
-      width: 48, height: 48, borderRadius: 24,
-      alignItems: 'center', justifyContent: 'center',
-      marginRight: 12, flexShrink: 0,
+      width: 52,
+      height: 52,
+      borderRadius: radius.xl,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: spacing[3],
+      flexShrink: 0,
     },
-    icon:    { fontSize: 26 },
-    info:    { flex: 1 },
-    nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-    name:    { fontSize: 15, fontWeight: '700', color: theme.text, flex: 1 },
-    badge:   { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 6 },
-    badgeText: { fontSize: 10, fontWeight: '700' },
-    season:  { fontSize: 11, color: theme.subtext, marginBottom: 4 },
-    tip:     { fontSize: 11, color: theme.subtext, lineHeight: 16, opacity: 0.7 },
+    icon: { fontSize: 28 },
+    info: { flex: 1 },
+    nameRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: spacing[1],
+    },
+    name: {
+      ...typography.h5,
+      color: theme.text,
+      flex: 1,
+    },
+    badge: {
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing[2],
+      paddingVertical: 3,
+      marginLeft: spacing[2],
+    },
+    badgeText: { ...typography.tiny, fontWeight: "700" },
+    season: {
+      ...typography.caption,
+      color: theme.subtext,
+      marginBottom: spacing[1],
+    },
+    tip: {
+      ...typography.caption,
+      color: theme.subtext,
+      lineHeight: 17,
+      opacity: 0.8,
+    },
   });
-}
-
-export default function CropCard({ crop, suitable }) {
-  const { t }     = useLanguage();
-  const { theme, isDark } = useTheme();
-  const styles    = useMemo(() => makeStyles(theme), [theme]);
-
-  const suitableBg    = isDark ? '#1E1B4B' : '#EEF2FF';
-  const unsuitableBg  = isDark ? '#374151' : '#F1F5F9';
-  const suitableIconBg   = theme.light;
-  const unsuitableIconBg = isDark ? '#374151' : '#F1F5F9';
-
-  return (
-    <View style={[styles.card, { borderLeftColor: suitable ? theme.primary : theme.border }]}>
-      <View style={[styles.iconCircle, { backgroundColor: suitable ? suitableIconBg : unsuitableIconBg }]}>
-        <Text style={styles.icon}>{crop.icon}</Text>
-      </View>
-      <View style={styles.info}>
-        <View style={styles.nameRow}>
-          <Text style={styles.name}>{crop.name}</Text>
-          <View style={[styles.badge, { backgroundColor: suitable ? suitableBg : unsuitableBg }]}>
-            <Text style={[styles.badgeText, { color: suitable ? theme.primary : theme.subtext }]}>
-              {suitable ? `✅ ${t('suitable')}` : `❌ ${t('notNow')}`}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.season}>{crop.season}</Text>
-        <Text style={styles.tip} numberOfLines={2}>{crop.tip}</Text>
-      </View>
-    </View>
-  );
 }

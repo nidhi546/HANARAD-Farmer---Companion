@@ -8,6 +8,7 @@ import { useAuth }     from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme }    from '../context/ThemeContext';
 import AppHeader from '../components/AppHeader';
+import useNasaConfig from '../hooks/useNasaConfig';
 
 function makeStyles(theme) {
   return StyleSheet.create({
@@ -92,8 +93,10 @@ export default function ProfileScreen({ navigation }) {
 
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const { versionLabel } = useNasaConfig();
+
   const infoItems = [
-    { icon: '🛰️', label: t('nasaPowerLabel'), value: t('nasaPowerDesc') },
+    { icon: '🛰️', label: t('nasaPowerLabel'), value: versionLabel || t('nasaPowerDesc') },
     { icon: '🌐', label: t('openMeteoLabel'), value: t('openMeteoDesc') },
     { icon: '🌱', label: t('cropRulesLabel'), value: t('cropRulesDesc') },
   ];
@@ -143,12 +146,16 @@ export default function ProfileScreen({ navigation }) {
       <View style={styles.coordCard}>
         <View style={styles.coordItem}>
           <Text style={styles.coordLabel}>{t('latitude')}</Text>
-          <Text style={styles.coordValue}>{location.lat.toFixed(4)}°N</Text>
+          <Text style={styles.coordValue}>
+            {location?.lat != null ? Number(location.lat).toFixed(4) : '--'}°N
+          </Text>
         </View>
         <View style={styles.coordDivider} />
         <View style={styles.coordItem}>
           <Text style={styles.coordLabel}>{t('longitude')}</Text>
-          <Text style={styles.coordValue}>{location.lon.toFixed(4)}°E</Text>
+          <Text style={styles.coordValue}>
+            {location?.lon != null ? Number(location.lon).toFixed(4) : '--'}°E
+          </Text>
         </View>
       </View>
 

@@ -34,6 +34,14 @@ const LANGUAGES = [
     bg: '#F5F3FF',
     border: '#8B5CF6',
   },
+  {
+    code: 'tl',
+    label: 'Filipino',
+    sublabel: 'Tagalog',
+    flag: '🇵🇭',
+    bg: '#FEF2F2',
+    border: '#DC2626',
+  },
 ];
 
 export default function LanguageSelectScreen({ navigation }) {
@@ -53,7 +61,7 @@ export default function LanguageSelectScreen({ navigation }) {
       {/* Header illustration */}
       <View style={styles.top}>
         <Text style={styles.flagBig}>🌾</Text>
-        <Text style={styles.appName}>FarmerApp</Text>
+        <Text style={styles.appName}>HANARAD Farmer-Companion</Text>
         <Text style={styles.heading}>
           {t('chooseLanguage')}
           {'\n'}ভাষा ਚੁਣੋ / भाषा चुनें

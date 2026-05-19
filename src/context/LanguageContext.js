@@ -6,11 +6,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import en from '../locales/en.json';
 import gu from '../locales/gu.json';
 import hi from '../locales/hi.json';
+import tl from '../locales/tl.json';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const STORAGE_KEY      = 'appLanguage';
 const DEFAULT_LANGUAGE = 'en';
-const SUPPORTED        = { en, gu, hi };
+const SUPPORTED        = { en, gu, hi, tl };
 
 // ── Context ────────────────────────────────────────────────────────────────
 const LanguageContext = createContext(null);

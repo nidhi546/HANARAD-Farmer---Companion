@@ -2,5 +2,6 @@
 import en from '../locales/en.json';
 import gu from '../locales/gu.json';
 import hi from '../locales/hi.json';
+import tl from '../locales/tl.json';
 
-export const translations = { en, gu, hi };
+export const translations = { en, gu, hi, tl };
