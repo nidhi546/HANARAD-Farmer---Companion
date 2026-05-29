@@ -52,6 +52,9 @@ export const KEYS = {
   // Crop management
   RECENT_CROPS:          'recentCrops',          // [cropId, ...] last 10 selections
   PENDING_CROP_MASTERS:  'pendingCropMasters',   // user-submitted pending crops (local copy)
+  // Disease module
+  DISEASE_CACHE:         'diseaseCache',         // full disease bundle (TTL 7 days)
+  DISEASE_SCAN_HISTORY:  'diseaseScanHistory',   // local copy of recent scans
 };
 
 /**
