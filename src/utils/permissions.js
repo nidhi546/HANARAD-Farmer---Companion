@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { Alert, Linking } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 
 async function _handleDenied(canAskAgain, title, msg, t) {
   if (canAskAgain) {
@@ -29,6 +29,9 @@ export async function requestCameraPermission(t) {
 }
 
 export async function requestMediaLibraryPermission(t) {
+  // Android 13+ (API 33+) uses the system Photo Picker which is permission-less
+  if (Platform.OS === 'android' && Platform.Version >= 33) return true;
+
   const { status, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status === 'granted') return true;
   await _handleDenied(

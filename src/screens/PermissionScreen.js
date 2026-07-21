@@ -80,6 +80,7 @@ const STEPS = [
     voiceHi: 'गैलरी एक्सेस से आप पुरानी फसल की फोटो अपलोड करके बीमारी की जांच कर सकते हैं।',
     voiceGu: 'ગેલેરી એક્સેસ થી આપ જૂની પાક ની ફોટો અપલોડ કરી ને રોગ ની તપાસ કરી શક્શો.',
     request: async () => {
+      if (Platform.OS === 'android' && Platform.Version >= 33) return true;
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       return status === 'granted';
     },
