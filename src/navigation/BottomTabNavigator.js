@@ -6,6 +6,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme }         from '../context/ThemeContext';
 import { useNotifications } from '../context/NotificationContext';
+import {
+  TAB_BAR_HEIGHT, TAB_BAR_FAB_DIAMETER, TAB_BAR_FAB_LIFT, tabBarBottomPadding,
+} from './tabBarMetrics';
 
 import HomeScreen        from '../screens/HomeScreen';
 import WeatherScreen     from '../screens/WeatherScreen';
@@ -41,7 +44,7 @@ function CustomBar({ state, navigation }) {
   }
 
   return (
-    <View style={[S.root, { paddingBottom: insets.bottom || 12 }]} pointerEvents="box-none">
+    <View style={[S.root, { paddingBottom: tabBarBottomPadding(insets) }]} pointerEvents="box-none">
 
       {/* ── Centre FAB — floats above the bar ── */}
       <View style={S.fabRow} pointerEvents="box-none">
@@ -139,9 +142,9 @@ export default function BottomTabNavigator() {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const BAR_H    = 62;
-const FAB_D    = 60;
-const FAB_LIFT = 26;   // how far FAB rises above bar top
+const BAR_H    = TAB_BAR_HEIGHT;
+const FAB_D    = TAB_BAR_FAB_DIAMETER;
+const FAB_LIFT = TAB_BAR_FAB_LIFT;   // how far FAB rises above bar top
 
 const S = StyleSheet.create({
 

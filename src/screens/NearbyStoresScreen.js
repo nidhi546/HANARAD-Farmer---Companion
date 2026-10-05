@@ -146,9 +146,12 @@ export default function NearbyStoresScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={styles.loadingText}>Searching nearby stores…</Text>
+      <View style={styles.container}>
+        <AppHeader title="Nearby Stores" subtitle={`📍 ${location.city}`} />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={styles.loadingText}>Searching nearby stores…</Text>
+        </View>
       </View>
     );
   }

@@ -10,7 +10,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocation } from '../context/LocationContext';
 import { THEME } from '../constants/theme';
 
@@ -28,6 +28,7 @@ const CITIES = [
 export default function LocationScreen({ navigation }) {
   const { saveLocation, getGPSLocation, loading, gpsError, setGpsError } = useLocation();
   const [search, setSearch] = useState('');
+  const insets = useSafeAreaInsets();
 
   const filtered = CITIES.filter(c =>
     c.city.toLowerCase().includes(search.toLowerCase())
@@ -66,11 +67,11 @@ export default function LocationScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.root} edges={['bottom']}>
       <StatusBar barStyle="light-content" backgroundColor={THEME.primary} />
 
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header — extends under the status bar so its colour fills the safe area */}
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Text style={styles.headerTitle}>Set Your Location</Text>
         <Text style={styles.headerSub}>We'll show weather data for your area</Text>
       </View>

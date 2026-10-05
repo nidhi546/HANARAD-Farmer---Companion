@@ -1177,8 +1177,8 @@ export default function NasaSurfaceScreen() {
   // ── Loading screen ────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top }]}>
-        <View style={[styles.header, { paddingTop: 20 }]}>
+      <View style={styles.root}>
+        <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
           <View style={styles.headerRow}>
             <TouchableOpacity
               style={styles.backBtn}

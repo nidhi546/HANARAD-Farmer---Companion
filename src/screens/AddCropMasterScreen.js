@@ -21,7 +21,7 @@ import {
   TextInput, KeyboardAvoidingView, Platform, Alert,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth }  from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -158,6 +158,7 @@ const rp = StyleSheet.create({
 export default function AddCropMasterScreen({ navigation, route }) {
   const { user }  = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const prefillName = route?.params?.prefillName || '';
 
@@ -260,10 +261,10 @@ export default function AddCropMasterScreen({ navigation, route }) {
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={['top']}>
+    <SafeAreaView style={[s.root, { backgroundColor: theme.background }]} edges={[]}>
 
       {/* Header */}
-      <View style={[s.header, { backgroundColor: theme.primary }]}>
+      <View style={[s.header, { backgroundColor: theme.primary, paddingTop: insets.top + 14 }]}>
         <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
           <Text style={s.backTxt}>‹</Text>
         </TouchableOpacity>

@@ -1,0 +1,90 @@
+diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageActivity.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageActivity.kt
+index 59ca718..5dbae5d 100644
+--- a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageActivity.kt
++++ b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageActivity.kt
+@@ -19,6 +19,7 @@ class ExpoCropImageActivity : CropImageActivity() {
+   // region Lifecycle Methods
+   override fun onCreate(savedInstanceState: android.os.Bundle?) {
+     super.onCreate(savedInstanceState)
++    applySystemBarInsets()
+     // Fetch the private cropImageOptions and apply the palette as early as possible so
+     // the toolbar and menu icons are tinted correctly on first render.
+     getCropOptions()?.let { opts ->
+@@ -59,6 +60,25 @@ class ExpoCropImageActivity : CropImageActivity() {
+   }
+ 
+   // region Helper Methods
++  /**
++   * Under edge-to-edge (enforced on Android 15+) the toolbar and crop view are drawn
++   * behind the status and navigation bars. Pad the decor content by the system bar
++   * insets so the toolbar actions and the full image stay visible.
++   */
++  private fun applySystemBarInsets() {
++    val decor = window.decorView as? android.view.ViewGroup ?: return
++    val content = decor.getChildAt(0) ?: return
++    androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(decor) { _, insets ->
++      val bars = insets.getInsets(
++        androidx.core.view.WindowInsetsCompat.Type.systemBars() or
++          androidx.core.view.WindowInsetsCompat.Type.displayCutout()
++      )
++      content.setPadding(bars.left, bars.top, bars.right, bars.bottom)
++      androidx.core.view.WindowInsetsCompat.CONSUMED
++    }
++    androidx.core.view.ViewCompat.requestApplyInsets(decor)
++  }
++
+   private fun getCropOptions(): CropImageOptions? =
+     runCatching {
+       CropImageActivity::class.java.getDeclaredField("cropImageOptions")
+diff --git a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageUtils.kt b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageUtils.kt
+index a876bbc..8474bfb 100644
+--- a/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageUtils.kt
++++ b/node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageUtils.kt
+@@ -82,6 +82,14 @@ object ExpoCropImageUtils {
+     isNight: Boolean
+   ) {
+     window.statusBarColor = toolbarColor
+-    WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isNight
++    window.navigationBarColor = toolbarColor
++    // On Android 15+ (edge-to-edge) the status bar colour is ignored, so paint the
++    // decor behind the system bars with the toolbar colour instead.
++    window.decorView.setBackgroundColor(toolbarColor)
++    val lightBars = androidx.core.graphics.ColorUtils.calculateLuminance(toolbarColor) > 0.5
++    WindowInsetsControllerCompat(window, window.decorView).apply {
++      isAppearanceLightStatusBars = lightBars
++      isAppearanceLightNavigationBars = lightBars
++    }
+   }
+ }
+diff --git a/node_modules/expo-image-picker/android/src/main/res/values-night/colors.xml b/node_modules/expo-image-picker/android/src/main/res/values-night/colors.xml
+index 1d9e07f..b705318 100644
+--- a/node_modules/expo-image-picker/android/src/main/res/values-night/colors.xml
++++ b/node_modules/expo-image-picker/android/src/main/res/values-night/colors.xml
+@@ -2,7 +2,7 @@
+ <resources>
+     <!-- Custom colors for image picker cropping interface -->
+     <!-- Dark mode defaults -->
+-    <color name="expoCropToolbarColor">#00000000</color> <!-- Transparent -->
++    <color name="expoCropToolbarColor">#000000</color> <!-- Solid black (avoids white gap under edge-to-edge) -->
+     <color name="expoCropToolbarIconColor">#ffffff</color> <!-- White icons -->
+     <color name="expoCropToolbarActionTextColor">#ffffff</color> <!-- White text -->
+     <color name="expoCropBackButtonIconColor">#ffffff</color> <!-- White back button -->
+diff --git a/node_modules/expo-image-picker/android/src/main/res/values/colors.xml b/node_modules/expo-image-picker/android/src/main/res/values/colors.xml
+index f10bea3..caa8ffe 100644
+--- a/node_modules/expo-image-picker/android/src/main/res/values/colors.xml
++++ b/node_modules/expo-image-picker/android/src/main/res/values/colors.xml
+@@ -2,9 +2,9 @@
+ <resources>
+     <!-- Custom colors for image picker cropping interface -->
+     <!-- Light mode defaults -->
+-    <color name="expoCropToolbarColor">#00000000</color> <!-- Transparent -->
+-    <color name="expoCropToolbarIconColor">#000000</color> <!-- Black icons -->
+-    <color name="expoCropToolbarActionTextColor">#000000</color> <!-- Black text -->
+-    <color name="expoCropBackButtonIconColor">#000000</color> <!-- Black back button -->
+-    <color name="expoCropBackgroundColor">#ffffff</color> <!-- White background -->
++    <color name="expoCropToolbarColor">#000000</color> <!-- Solid black (avoids white gap under edge-to-edge) -->
++    <color name="expoCropToolbarIconColor">#ffffff</color> <!-- White icons -->
++    <color name="expoCropToolbarActionTextColor">#ffffff</color> <!-- White text -->
++    <color name="expoCropBackButtonIconColor">#ffffff</color> <!-- White back button -->
++    <color name="expoCropBackgroundColor">#000000</color> <!-- Black background -->
+ </resources>

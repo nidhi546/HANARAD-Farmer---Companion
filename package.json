@@ -42,8 +42,10 @@
   },
   "devDependencies": {
     "@react-native-community/cli": "latest",
+    "@types/react": "~19.1.10",
     "jimp": "^1.6.1",
-    "patch-package": "^8.0.1"
+    "patch-package": "^8.0.1",
+    "typescript": "~5.9.2"
   },
   "private": true
 }

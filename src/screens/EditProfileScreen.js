@@ -15,7 +15,7 @@ import {
   Modal,
   Keyboard,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { pickFromCamera, pickFromGallery } from "../utils/imagePicker";
 import { useAuth } from "../context/AuthContext";
@@ -481,6 +481,7 @@ export default function EditProfileScreen({ navigation }) {
   const { user, updateUser } = useAuth();
   const { t, language, changeLanguage } = useLanguage();
   const { theme, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
   // ── Individual field state (avoids whole-form re-render on each keystroke)
@@ -658,11 +659,11 @@ export default function EditProfileScreen({ navigation }) {
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={styles.root} edges={["top"]}>
+    <SafeAreaView style={styles.root} edges={[]}>
       <StatusBar barStyle="light-content" backgroundColor={theme.primary} />
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: 8 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => navigation.goBack()}
