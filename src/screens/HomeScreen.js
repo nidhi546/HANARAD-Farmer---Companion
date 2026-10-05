@@ -44,8 +44,13 @@ import { useAuth } from "../context/AuthContext";
 import { getWeatherIcon } from "../utils/helpers";
 import Analytics from "../utils/analytics";
 import useDashboard from "../hooks/useDashboard";
+import { useTabBarSpace } from "../navigation/tabBarMetrics";
 
 const { width } = Dimensions.get("window");
+
+// Today's Overview grid: 3 cards per row inside the 20px screen gutters
+const STAT_GAP = 10;
+const STAT_CARD_W = Math.floor((width - 40 - STAT_GAP * 2) / 3);
 
 // ── Time-based greeting ───────────────────────────────────────────────────────
 function getGreeting(t) {
@@ -310,12 +315,19 @@ function makeStyles(theme) {
     sectionAction: { fontSize: 13, fontWeight: "700", color: theme.primary },
 
     // ── Quick stats (horizontal scroll) ────────────────────────────────────
-    statsScroll: { paddingLeft: 20 },
+    statsGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      paddingHorizontal: 20,
+      gap: STAT_GAP,
+    },
     statCard: {
-      width: 110,
-      marginRight: 12,
+      flexGrow: 1,
+      flexBasis: STAT_CARD_W,
+      minWidth: STAT_CARD_W,
       borderRadius: 20,
-      padding: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 8,
       alignItems: "center",
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
@@ -352,6 +364,7 @@ function makeStyles(theme) {
       marginHorizontal: 20,
       borderRadius: 28,
       overflow: "hidden",
+      backgroundColor: theme.primary,
       shadowColor: theme.primary,
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.22,
@@ -411,6 +424,8 @@ function makeStyles(theme) {
     },
     weatherFooter: {
       backgroundColor: "rgba(0,0,0,0.18)",
+      borderTopWidth: 1,
+      borderTopColor: "rgba(255,255,255,0.15)",
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
@@ -418,11 +433,12 @@ function makeStyles(theme) {
       gap: 6,
     },
     weatherFooterText: {
-      fontSize: 13,
-      fontWeight: "700",
-      color: "rgba(255,255,255,0.9)",
+      fontSize: 14,
+      fontWeight: "800",
+      color: "#FFFFFF",
+      letterSpacing: 0.2,
     },
-    weatherFooterArrow: { fontSize: 16, color: "rgba(255,255,255,0.65)" },
+    weatherFooterArrow: { fontSize: 18, fontWeight: "700", color: "#FFFFFF" },
 
     // ── Module grid ─────────────────────────────────────────────────────────
     moduleGrid: { paddingHorizontal: 20, gap: 14 },
@@ -613,6 +629,7 @@ function makeStyles(theme) {
 export default function HomeScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const { location } = useLocation();
   const { t } = useLanguage();
   const { theme } = useTheme();
@@ -850,11 +867,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.statsScroll}
-        >
+        <View style={styles.statsGrid}>
           <StatCard
             icon="🌡️"
             value={weather ? `${weather.max}°` : "--"}
@@ -900,7 +913,7 @@ export default function HomeScreen() {
             ringBg="#BBF7D0"
             styles={styles}
           />
-        </ScrollView>
+        </View>
 
         {/* ════════════════════════════════════════════════════
             WEATHER HERO CARD (dynamic from forecast API)
@@ -1171,7 +1184,8 @@ export default function HomeScreen() {
           </>
         )}
 
-        <View style={{ height: 48 }} />
+        {/* Keep the last section clear of the floating tab bar */}
+        <View style={{ height: tabBarSpace }} />
       </Animated.View>
     </ScrollView>
   );

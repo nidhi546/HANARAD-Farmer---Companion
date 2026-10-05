@@ -1,0 +1,204 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Background gradient: dark earth-green -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#052E16"/>
+      <stop offset="55%"  stop-color="#14532D"/>
+      <stop offset="100%" stop-color="#166534"/>
+    </linearGradient>
+
+    <!-- Wheat grain gradient: deep amber → bright gold -->
+    <linearGradient id="wheatGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%"   stop-color="#92400E"/>
+      <stop offset="40%"  stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#FDE68A"/>
+    </linearGradient>
+
+    <!-- Leaf gradient: vibrant emerald -->
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#4ADE80"/>
+      <stop offset="100%" stop-color="#16A34A"/>
+    </linearGradient>
+
+    <!-- Ambient glow behind the wheat -->
+    <radialGradient id="ambiGlow" cx="50%" cy="45%" r="42%">
+      <stop offset="0%"   stop-color="#FBBF24" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#FBBF24" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Drop shadow for depth -->
+    <filter id="dropshadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14"
+                    flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+
+    <!-- Soft glow for the sun icon -->
+    <filter id="sunGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Clip to rounded square -->
+    <clipPath id="roundedClip">
+      <rect width="1024" height="1024" rx="210"/>
+    </clipPath>
+  </defs>
+
+  <!-- ── Background ── -->
+  <rect width="1024" height="1024" rx="210" fill="url(#bgGrad)"/>
+
+  <!-- Subtle dot-grid texture overlay -->
+  <g clip-path="url(#roundedClip)" opacity="0.06">
+    <pattern id="dotGrid" x="0" y="0" width="48" height="48"
+             patternUnits="userSpaceOnUse">
+      <circle cx="24" cy="24" r="2" fill="#ffffff"/>
+    </pattern>
+    <rect width="1024" height="1024" fill="url(#dotGrid)"/>
+  </g>
+
+  <!-- Ambient glow pool behind wheat -->
+  <ellipse cx="512" cy="468" rx="260" ry="310" fill="url(#ambiGlow)"/>
+
+  <!-- ═══════════════════════════════════
+       WHEAT STALK
+       ═══════════════════════════════════ -->
+
+  <!-- Main stem -->
+  <rect x="500" y="336" width="24" height="432" rx="12"
+        fill="url(#wheatGrad)" filter="url(#dropshadow)"/>
+
+  <!-- ── Top / centre grain ── -->
+  <ellipse cx="512" cy="284" rx="40" ry="66"
+           fill="url(#wheatGrad)" filter="url(#dropshadow)"/>
+  <!-- Awns -->
+  <line x1="512" y1="218" x2="482" y2="174" stroke="#FDE68A" stroke-width="4.5" stroke-linecap="round" opacity="0.9"/>
+  <line x1="512" y1="214" x2="512" y2="166" stroke="#FDE68A" stroke-width="4.5" stroke-linecap="round" opacity="0.9"/>
+  <line x1="512" y1="218" x2="542" y2="174" stroke="#FDE68A" stroke-width="4.5" stroke-linecap="round" opacity="0.9"/>
+
+  <!-- ── Left column, row 1 ── -->
+  <ellipse cx="455" cy="352" rx="33" ry="56"
+           fill="url(#wheatGrad)" transform="rotate(-26,455,352)"
+           filter="url(#dropshadow)"/>
+  <line x1="432" y1="298" x2="396" y2="264" stroke="#FDE68A" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+  <line x1="436" y1="292" x2="410" y2="252" stroke="#FDE68A" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- ── Right column, row 1 ── -->
+  <ellipse cx="569" cy="352" rx="33" ry="56"
+           fill="url(#wheatGrad)" transform="rotate(26,569,352)"
+           filter="url(#dropshadow)"/>
+  <line x1="592" y1="298" x2="628" y2="264" stroke="#FDE68A" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+  <line x1="588" y1="292" x2="614" y2="252" stroke="#FDE68A" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- ── Left column, row 2 ── -->
+  <ellipse cx="426" cy="434" rx="29" ry="50"
+           fill="url(#wheatGrad)" transform="rotate(-20,426,434)"
+           filter="url(#dropshadow)"/>
+  <line x1="407" y1="386" x2="372" y2="355" stroke="#FDE68A" stroke-width="3.5" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- ── Right column, row 2 ── -->
+  <ellipse cx="598" cy="434" rx="29" ry="50"
+           fill="url(#wheatGrad)" transform="rotate(20,598,434)"
+           filter="url(#dropshadow)"/>
+  <line x1="617" y1="386" x2="652" y2="355" stroke="#FDE68A" stroke-width="3.5" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- ── Left column, row 3 ── -->
+  <ellipse cx="412" cy="512" rx="25" ry="43"
+           fill="url(#wheatGrad)" transform="rotate(-14,412,512)"
+           filter="url(#dropshadow)"/>
+
+  <!-- ── Right column, row 3 ── -->
+  <ellipse cx="612" cy="512" rx="25" ry="43"
+           fill="url(#wheatGrad)" transform="rotate(14,612,512)"
+           filter="url(#dropshadow)"/>
+
+  <!-- ── Left column, row 4 ── -->
+  <ellipse cx="407" cy="584" rx="22" ry="37"
+           fill="url(#wheatGrad)" transform="rotate(-10,407,584)"
+           filter="url(#dropshadow)"/>
+
+  <!-- ── Right column, row 4 ── -->
+  <ellipse cx="617" cy="584" rx="22" ry="37"
+           fill="url(#wheatGrad)" transform="rotate(10,617,584)"
+           filter="url(#dropshadow)"/>
+
+  <!-- ═══════════════════════════════════
+       LEAVES
+       ═══════════════════════════════════ -->
+  <!-- Left leaf -->
+  <path d="M 512 672 Q 388 605 354 492 Q 434 550 512 672 Z"
+        fill="url(#leafGrad)" filter="url(#dropshadow)" opacity="0.95"/>
+  <!-- Left leaf midrib -->
+  <path d="M 512 672 Q 435 618 400 540"
+        stroke="#86EFAC" stroke-width="2.5" fill="none" opacity="0.55" stroke-linecap="round"/>
+
+  <!-- Right leaf -->
+  <path d="M 512 672 Q 636 605 670 492 Q 590 550 512 672 Z"
+        fill="url(#leafGrad)" filter="url(#dropshadow)" opacity="0.95"/>
+  <!-- Right leaf midrib -->
+  <path d="M 512 672 Q 589 618 624 540"
+        stroke="#86EFAC" stroke-width="2.5" fill="none" opacity="0.55" stroke-linecap="round"/>
+
+  <!-- ── Ground arc / soil ── -->
+  <ellipse cx="512" cy="790" rx="152" ry="20"
+           fill="#052E16" opacity="0.55"/>
+  <ellipse cx="512" cy="788" rx="100" ry="11"
+           fill="#FBBF24" opacity="0.12"/>
+
+  <!-- ═══════════════════════════════════
+       SMART-FARMING NODES  (left side)
+       ═══════════════════════════════════ -->
+  <g opacity="0.82" filter="url(#sunGlow)">
+    <circle cx="284" cy="420" r="8"  fill="#6EE7B7"/>
+    <circle cx="260" cy="500" r="6"  fill="#34D399"/>
+    <circle cx="284" cy="578" r="7"  fill="#6EE7B7"/>
+    <circle cx="248" cy="648" r="5"  fill="#34D399"/>
+    <line x1="284" y1="420" x2="260" y2="500"
+          stroke="#34D399" stroke-width="1.8" opacity="0.5"/>
+    <line x1="260" y1="500" x2="284" y2="578"
+          stroke="#34D399" stroke-width="1.8" opacity="0.5"/>
+    <line x1="284" y1="578" x2="248" y2="648"
+          stroke="#34D399" stroke-width="1.5" opacity="0.4"/>
+  </g>
+
+  <!-- Smart-farming nodes (right side) -->
+  <g opacity="0.82" filter="url(#sunGlow)">
+    <circle cx="740" cy="420" r="8"  fill="#6EE7B7"/>
+    <circle cx="764" cy="500" r="6"  fill="#34D399"/>
+    <circle cx="740" cy="578" r="7"  fill="#6EE7B7"/>
+    <circle cx="776" cy="648" r="5"  fill="#34D399"/>
+    <line x1="740" y1="420" x2="764" y2="500"
+          stroke="#34D399" stroke-width="1.8" opacity="0.5"/>
+    <line x1="764" y1="500" x2="740" y2="578"
+          stroke="#34D399" stroke-width="1.8" opacity="0.5"/>
+    <line x1="740" y1="578" x2="776" y2="648"
+          stroke="#34D399" stroke-width="1.5" opacity="0.4"/>
+  </g>
+
+  <!-- ═══════════════════════════════════
+       SUN  (top-right accent)
+       ═══════════════════════════════════ -->
+  <g transform="translate(828,196)" filter="url(#sunGlow)" opacity="0.85">
+    <circle cx="0" cy="0" r="28" fill="#FBBF24"/>
+    <!-- 8 rays -->
+    <line x1="0"   y1="-42" x2="0"   y2="-58" stroke="#FDE68A" stroke-width="5" stroke-linecap="round"/>
+    <line x1="30"  y1="-30" x2="41"  y2="-41" stroke="#FDE68A" stroke-width="5" stroke-linecap="round"/>
+    <line x1="42"  y1="0"   x2="58"  y2="0"   stroke="#FDE68A" stroke-width="5" stroke-linecap="round"/>
+    <line x1="30"  y1="30"  x2="41"  y2="41"  stroke="#FDE68A" stroke-width="5" stroke-linecap="round"/>
+    <line x1="0"   y1="42"  x2="0"   y2="58"  stroke="#FDE68A" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-30" y1="30"  x2="-41" y2="41"  stroke="#FDE68A" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-42" y1="0"   x2="-58" y2="0"   stroke="#FDE68A" stroke-width="5" stroke-linecap="round"/>
+    <line x1="-30" y1="-30" x2="-41" y2="-41" stroke="#FDE68A" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- ═══════════════════════════════════
+       HANARAD  wordmark (bottom)
+       ═══════════════════════════════════ -->
+  <text x="512" y="888"
+        font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
+        font-size="82" font-weight="900" letter-spacing="18"
+        text-anchor="middle" fill="#FFFFFF" opacity="0.95">HANARAD</text>
+  <text x="512" y="932"
+        font-family="'Arial', 'Helvetica Neue', Arial, sans-serif"
+        font-size="26" font-weight="500" letter-spacing="6"
+        text-anchor="middle" fill="#6EE7B7" opacity="0.8">FARMER COMPANION</text>
+</svg>

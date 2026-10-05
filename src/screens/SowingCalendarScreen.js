@@ -156,9 +156,12 @@ export default function SowingCalendarScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={styles.loadingText}>{t('loadingClimate')}</Text>
+      <View style={styles.container}>
+        <AppHeader title={t('sowingAdvisor')} subtitle={`📍 ${location.city}`} />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={styles.loadingText}>{t('loadingClimate')}</Text>
+        </View>
       </View>
     );
   }

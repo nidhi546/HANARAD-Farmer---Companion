@@ -186,9 +186,12 @@ export default function IrrigationScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={styles.loadingText}>Calculating water needs…</Text>
+      <View style={styles.container}>
+        <AppHeader title="Irrigation Advisor" subtitle={`📍 ${location.city}`} />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={styles.loadingText}>Calculating water needs…</Text>
+        </View>
       </View>
     );
   }

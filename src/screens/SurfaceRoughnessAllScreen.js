@@ -24,9 +24,9 @@ export default function SurfaceRoughnessAllScreen() {
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
+    <View style={styles.root}>
+      {/* Header — extends under the status bar */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={{ fontSize: 18, color: '#fff' }}>←</Text>
         </TouchableOpacity>
@@ -36,7 +36,7 @@ export default function SurfaceRoughnessAllScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, paddingBottom: 16 + insets.bottom }}>
         {Object.entries(surfaceRaw).map(([key, val]) => {
           const r      = val?.Roughness || {};
           const annual = r.Annual ?? '—';

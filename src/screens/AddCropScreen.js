@@ -14,7 +14,7 @@ import {
   ScrollView, FlatList, Modal, KeyboardAvoidingView, Platform, Alert,
   ActivityIndicator, StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth }     from '../context/AuthContext';
 import { useTheme }    from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -384,6 +384,7 @@ const bc = StyleSheet.create({
 
 export default function AddCropScreen({ navigation, route }) {
   const { theme }    = useTheme();
+  const insets       = useSafeAreaInsets();
   const { language } = useLanguage();
   const { user }     = useAuth();
   const styles = useMemo(() => makeStyles(theme), [theme]);
@@ -532,11 +533,11 @@ export default function AddCropScreen({ navigation, route }) {
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]} edges={[]}>
       <StatusBar barStyle="light-content" backgroundColor={theme.primary} />
 
       {/* ── Header ──────────────────────────────────────────────── */}
-      <View style={[styles.header, { backgroundColor: theme.primary }]}>
+      <View style={[styles.header, { backgroundColor: theme.primary, paddingTop: insets.top + 6 }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backArrow}>‹</Text>
         </TouchableOpacity>

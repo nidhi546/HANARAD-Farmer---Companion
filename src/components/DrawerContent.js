@@ -11,7 +11,7 @@ import {
   View, Text, Pressable, StyleSheet,
   ScrollView, Switch, Image, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth }          from '../context/AuthContext';
 import { useLocation }      from '../context/LocationContext';
 import { useLanguage }      from '../context/LanguageContext';
@@ -50,6 +50,7 @@ export default function DrawerContent({ state, navigation }) {
   const { t, language, changeLanguage } = useLanguage();
   const { isDark, toggleTheme, theme }  = useTheme();
   const { onLogout: notifLogout }       = useNotifications();
+  const insets                          = useSafeAreaInsets();
 
   const styles    = useMemo(() => makeStyles(theme), [theme]);
   const menuItems = useMemo(() => getMenuItems(t), [t]);
@@ -86,10 +87,10 @@ export default function DrawerContent({ state, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.root} edges={['bottom']}>
 
-      {/* ── Profile Header ───────────────────────────────────────── */}
-      <View style={styles.header}>
+      {/* ── Profile Header (extends under the status bar) ────────── */}
+      <View style={[styles.header, { paddingTop: insets.top + styles.header.paddingTop }]}>
         <Pressable
           style={styles.avatarCircle}
           onPress={() => goTo('ProfileTab')}

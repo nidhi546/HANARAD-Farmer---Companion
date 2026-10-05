@@ -1,0 +1,75 @@
+import {
+  MapPinned,
+  Satellite,
+  ScanLine,
+  Sprout,
+  LineChart,
+  Languages,
+  Droplets,
+  CalendarRange,
+  Landmark,
+  PhoneCall,
+  Store,
+  Calculator,
+  BellRing,
+  LayoutDashboard,
+  SatelliteDish,
+  WifiOff,
+  ShieldCheck,
+  Menu,
+  X,
+  ChevronDown,
+  Mail,
+  Phone,
+  Clock,
+  ArrowRight,
+  Check,
+  Star,
+  Sparkles,
+  Download,
+  Leaf,
+  type LucideIcon,
+} from "lucide-react";
+
+export const icons: Record<string, LucideIcon> = {
+  "map-pinned": MapPinned,
+  satellite: Satellite,
+  "scan-line": ScanLine,
+  sprout: Sprout,
+  "line-chart": LineChart,
+  languages: Languages,
+  droplets: Droplets,
+  "calendar-range": CalendarRange,
+  landmark: Landmark,
+  "phone-call": PhoneCall,
+  store: Store,
+  calculator: Calculator,
+  "bell-ring": BellRing,
+  "layout-dashboard": LayoutDashboard,
+  "satellite-dish": SatelliteDish,
+  "wifi-off": WifiOff,
+  "shield-check": ShieldCheck,
+  menu: Menu,
+  x: X,
+  "chevron-down": ChevronDown,
+  mail: Mail,
+  phone: Phone,
+  clock: Clock,
+  "arrow-right": ArrowRight,
+  check: Check,
+  star: Star,
+  sparkles: Sparkles,
+  download: Download,
+  leaf: Leaf,
+};
+
+export function Icon({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
+  const Cmp = icons[name] ?? Leaf;
+  return <Cmp className={className} strokeWidth={1.75} />;
+}
